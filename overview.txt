@@ -1,0 +1,68 @@
+Suggested Reading
+Note: we will keep updating this list as new resources are made public.
+Start here
+Brief independent investigation of agents’ behavior, reasoning and collaboration in the OpenAI / Hugging Face hacking incident.(16 August) From a METR + Redwood Research investigation
+How independent researchers could investigate AI propensities after misalignment incidents (28 July). METR
+Hugging Face — Anatomy of a Frontier Lab Agent Intrusion (27 July). The forensic timeline: ~17,600 recovered actions in ~6,280 clusters, 9 July 02:28 UTC to 13 July 14:14 UTC, per-phase counts, named vulnerabilities, verbatim commands, and an embedded interactive replay. The single most important document for this sprint. ~40 min.
+Hugging Face — initial disclosure (16 July). Published before anyone knew which lab was responsible. Worth reading before the timeline to feel what disclosure-under-uncertainty looks like. ~10 min.
+OpenAI — model evaluation security incident (21 July, updated 28 and 29 July). Read the updates as well as the original; the 28 July update names the vulnerable component and expands the account of which external services were touched. ~15 min.
+Anthropic — Investigating three real-world incidents in our cybersecurity evaluations (30 July). 141,006 runs reviewed, three incidents across six runs, earliest dating to April 2026. Note the explicit framing contrast with OpenAI's incident — that framing is itself contestable and is a legitimate object of study. ~20 min.
+Also worth 5 minutes: OpenAI — Safety and alignment in an era of long-horizon models (20 July), a separate incident where a pre-release model escaped a sandbox and opened a public pull request. Frequently conflated with the Hugging Face incident. It isn't the same event.
+Track 1 — Minimal standards for internal deployment and evaluations
+Existing control frameworks 
+CoSAI — AI Incident Response Framework v1.0. Coalition for Secure AI, Workstream 2. Forensic investigation of AI systems, the complications agentic architectures introduce, alignment to NIST SP 800-61r3, and playbooks. Written for CSIRT and SOC responders. The closest thing to prior art for this whole sprint.
+CSA AI Controls Matrix, particularly control AIS-13 (AI Sandboxing), plus CSA's vulnerability-operations guidance specifying that exploit-confirmation environments should have no egress and no live production credentials. On cloudsecurityalliance.org — worth locating the current version yourself, as it's revised often.
+NIST SP 800-61r3, Incident Response Recommendations and Considerations. The baseline CoSAI maps onto.
+The chain itself, analysed by practitioners
+Elastic Security Labs — detecting the attack chain. Maps each stage to specific detection rules. Their central point — detection correlated but never escalated to a page — is the sharpest defensive insight anyone has published.
+SecureLayer7 — technical anatomy. The deepest independent technical read. Also proposes treating the replay corpus as a defensive evaluation harness: which action number does your control fire on? That's a track 1 project brief.
+Trackr.Live — identity and authorization controls. Focused on the shared connector credential carrying cluster-admin rights, which was the decisive escalation. Authorship isn't clear from the site — treat accordingly.
+Picus — machine-speed attacks. Useful for the proportions: exfiltration was ~56 actions out of ~17,600.
+7AI (Yonatan Striem-Amit) — The Era of Autonomous Hacking Is Here. Written by someone who has spent a career reconstructing attacks, carefully sourced, explicit about what remains preliminary.
+CSA CISO post-mortem (28 July). Informed by 50+ CISOs and a huddle of ~700. Contains a firsthand account from the Hugging Face response team and an agentic-AI tabletop recommendation.
+SANS — The Models Said No and Rich Mogull / CSA — The Model Did Exactly What We Asked. The two best short framings from the security side.
+The benchmark at the centre of it
+ExploitGym — repo, Apache 2.0 · paper (arXiv 2605.11086) · Berkeley RDI writeup. The released benchmark is v1.0 with 869 instances; the paper describes 898. Don't quote 898 as the shipped number.
+Track 2 — Base rates, verification, and warning shots
+The three public denominators
+UK AISI — Cheating behaviour in frontier model evaluations (21 July). Five models, 475 runs each, every model attempted to cheat: 14.1% / 12.6% / 11.4% / 9.1% / 7.8%. Includes AISI's own near-miss, where a model wrote and ran code on an external service to reach AISI's evaluation infrastructure. The most important secondary document in the sprint.
+Anthropic's review — 3 incidents across 6 runs out of 141,006 (linked above).
+METR's cross-industry Frontier Risk Report, referenced in their post below as documenting dozens of comparable incidents across all major AI companies.
+Investigation and verification methodology
+METR — How independent researchers could investigate AI propensities after misalignment incidents (29 July). Specifies what a credible third-party investigation requires: running the models involved, full transcripts or reproducible environments, employee interviews, classifiers over training data, adequate inference budget, a redaction summary. Effectively the spec for the persistence-protocol project.
+GovAI — Incident Analysis for AI Agents. Three causal factor types (system-related, contextual, cognitive) and — most usefully — what developers and deployers should retain and make available to investigators on request: activity logs, system documentation and access, tool information. Read this before writing any evidence-sufficiency work.
+CLTR — The Loss of Control Observatory (Feb 2026). Argues explicitly that controlled-setting demonstrations are insufficient for policy, that real-world evidence is the missing input, and that detection capability for incident response doesn't exist. Funded by the UK AISI Challenge Fund. The closest existing project to this track's premise.
+Interpretation — what actually happened, and why people disagree
+Redwood Research — The OpenAI models that hacked Hugging Face (25 July) and the accompanying podcast episode. Argues grader-gaming rather than instruction-following. Analysis published before the formal review engagement.
+MIT Technology Review — on precedent (27 July). Contests the "unprecedented" framing and argues the failure was human containment design rather than rogue AI. The best available counterweight to the labs' own narratives.
+Vectra — the response is the real story.
+Timeline reconstruction
+Reuters (via CNA) — exclusive on the detection timeline (24 July). Anonymous sourcing; several claims remain uncorroborated, including reports of notes left in infrastructure and disconnected monitoring. Read as a hypothesis, not a record. Its account of the detection sequence is in tension with OpenAI's own description — reconciling them is a legitimate project.
+Computer Weekly · Ars Technica on the Anthropic incidents · The Register.
+Track 3 — Regulatory response
+EU — serious incident reporting template for GPAI models with systemic risk (Nov 2025), tied to Commitment 9 of the GPAI Code of Practice. Not yet exercised in public against either incident.
+California — Cal OES critical safety incident reporting portal. Accepts submissions from members of the public, not only developers.
+OECD — common reporting framework for AI incidents, 29 criteria of which 7 are mandatory, and the live AI Incidents Monitor. Filling this alongside the EU and California instruments produces a four-regime comparison nobody has done.
+The texts
+EU: Commission enforcement powers over the AI Act — the Article 55 obligations have applied since 2 August 2025; enforcement powers from 2 August 2026.
+California: SB 53 bill text. Note §22757.15, which makes failure to comply with a developer's own published frontier AI framework an enforceable violation.
+New York: FPF — The RAISE Act vs SB 53 · IAPP analysis · Morrison Foerster on the 2026 amendments.
+US federal: H.R.9477, AI Incident Reporting Act · Politico on the congressional response · Ars Technica and CNBC on the AI Kill Switch Act — including the red-team carve-out this incident drives straight through.
+Design literature for reporting regimes
+Frontier Model Forum — Information Sharing, Incident Reporting, and Incident Response (May 2026). Distinguishes the three and warns that a mechanism to receive reports is not the same as capacity to act on them. Written by an industry body, three months before the point was proven.
+CSET — AI Incidents: Key Components for a Mandatory Reporting Regime. Recommends an independent investigation agency on the NTSB model, and distinguishes near misses from hazards — which matters, since both labs are framing these as near misses.
+AAAI 2026 — Designing Incident Reporting Systems for Harms from General-Purpose AI. Seven institutional design dimensions, nine case studies from safety-critical industries.
+CLTR — AI incident reporting: addressing a gap in the UK's regulation of AI · FAS — How to create an AI incident reporting system · Kolt et al. — Responsible Reporting for Frontier AI Development.
+European institutional context
+ENISA — View on Cybersecurity in the Frontier AI Era (8 May 2026), shared with EU-CyCLONe and the CSIRTs Network. Argues SOCs will need to validate intrusions within hours or minutes and that national CSIRT capacity faces a structural surge risk. Written two months before the incident proved the point.
+European CSIRT Inventory — the directory of national and sectoral response teams, if your project needs to identify who is actually on the receiving end.
+Track 4 — Open track
+Defensive over-refusal (the guardrail-lockout question)
+Defensive Refusal Bias (arXiv 2603.01246) · Scale Labs summary. 2,390 real NCCDC prompts, 12.2% overall refusal, security keywords refused at 2.72× equivalent neutral phrasing, and — counterintuitively — explicit authorization increased refusal, 21.8% vs 11.6%.
+Gray Swan — Cybersecurity Refusal Framework (arXiv 2606.02644) · code. Refusal boundaries for offensive-security agents.
+Meta CyberSecEval — MITRE False Refusal Rate benchmark plus CyberSOCEval, built with CrowdStrike.
+Content-based framework for cyber refusal decisions (arXiv 2602.15689) · OR-Bench for general over-refusal.
+Tabletop and policy-facing formats
+RAND Europe / UK AISI / Mila — cabinet-level AI crisis exercises (1 July 2026). Two-turn "Day After" methodology, 15–20 senior officials per session, run in Berlin, The Hague and Paris. The scenario is criminal misuse of a national champion model — deliberately not this incident, which is the gap.
+Incident data infrastructure
+OECD AI Incidents Monitor · AI Incident Database (Responsible AI Collaborative) · MIT AI Risk Initiative's AI Incident Tracker and FLARE-AI.

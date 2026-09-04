@@ -1,0 +1,103 @@
+Judging Criteria
+Dimension 1: Impact Potential & Innovation
+How much would this matter for AI safety if it worked? How innovative is it?
+For scores of 4-5: is this actually new to the field, or replicating recent work?
+Score
+Description
+1
+Negligible. No clear problem addressed, or no meaningful novelty.
+2
+Limited. Addresses a real problem but with a generic or well-trodden approach. Incremental at best.
+3
+Moderate. Clear problem with a reasonable approach; some novelty in framing or method beyond routine application of existing tools.
+4
+Significant. Important problem with an original approach, or identifies a neglected problem area. A valuable contribution others could build on.
+5
+Exceptional. Tackles a critical AI safety problem with a genuinely novel approach, or opens a new research direction. Clear theory of change. You'd be excited to share this with researchers in the area.
+Dimension 2: Execution Quality
+How sound are methodology, implementation, and findings?
+Score
+Description
+1
+Seriously flawed. Methodology broken, results uninterpretable, or implementation doesn't work.
+2
+Weak. Approach has significant gaps: missing validation, flawed experimental design, or incomplete implementation.
+3
+Competent. Technically solid given the short duration. Methodology makes sense, results are interpretable, limitations acknowledged, work builds toward clear conclusions.
+4
+Strong. Thorough methodology with convincing validation. Results clearly support conclusions. Immediately useful for future work.
+5
+Exceptional. Ambitious scope executed rigorously. Surprising findings, novel methods, or unusually robust validation.
+Dimension 3: Presentation & Clarity
+How clearly are work, findings, and impact potential communicated?
+Score
+Description
+1
+Incomprehensible. Cannot determine what the project is actually claiming or doing.
+2
+Hard to follow. Key information buried, missing, or diluted by excessive length. Significant effort to extract main points.
+3
+Clear enough. Can understand the problem, approach, and results without undue effort. Core content clearly present: problem, method, findings, limitations.
+4
+Well presented. Easy to follow, well-structured, appropriate level of detail. Target audience would get it quickly.
+5
+Exceptionally clear. A pleasure to read. Complex ideas made accessible. Could serve as a model for how to present this type of work.
+Submission Requirements
+Required:
+Research report (PDF) using the official template.
+Project title and abstract, 150 words or fewer.
+Author names and affiliations.
+A "Limitations and Dual-Use Considerations" appendix (required, see below).
+Optional:
+Public GitHub repo, subject to the disclosure review below. Do not publicly release novel installation recipes without review.
+A 3 to 5 minute video demo.
+Submission Template => Coming Soon
+Recommended Report Structure
+Most strong projects are 4 to 8 pages.
+Introduction: which sub-problem, why it matters, where it sits in the 2D space.
+Related Work: what you build on.
+Methodology: enough to replicate, specify affordance level and controls.
+Results: quantitative where possible (activation rate, selectivity, false-positive rate on matched controls, generalization).
+Discussion: implications, limitations, future work.
+Limitations & Dual-Use Considerations (required).
+References.
+Publishing your work
+We encourage teams to publish their submission, and LessWrong is a natural venue for most of the written ones. Write-ups from this sprint will hold value if they follow a few rules: state your epistemic status and don’t use LLMs for writing on Lesswrong, only use LLMs to find problems in your drafts, not to draft it; link the primary sources for every factual claim about the incident; pick a title that states the finding rather than the topic; and publish the imperfect version this month rather than the polished one in three. We will link the best posts from the sprint page. 
+Important Notes
+Solo vs team: enter solo or as a team. Teams of up to 5 are recommended; larger groups are allowed.
+Do not jailbreak models to generate harmful data (e.g. content with instructions for terrorism, assassination, or other serious harms) for the purpose of building organisms. Use the organizer-provided organisms and the provided benign datasets instead.
+Do not use any model to breach into any organisation or commit any other type of felony. 
+Building on existing work: allowed and encouraged, disclose what you built on.
+Fixing or resubmitting: submit again before the deadline using the exact same title and details; your new files replace the old ones.
+Where to submit: through the official submission form on the hackathon page.
+Support: the Discord help-desk channel, tag @Support on Discord or email sprints@apartresearch.com.
+Pre-submission checklist: report PDF, abstract 150 words or fewer, author and affiliations, Limitations and Dual-Use appendix, novel-installation results withheld pending review.
+Frequently Asked Questions
+Getting started
+How does the sprint work? Sign up, join the Discord server, form or join a team (or work solo), pick a track and a problem, build over the weekend, and submit a research report (PDF) by the deadline. Talks and Q&A run throughout.
+Can I participate remotely? Yes. This is an online event. All talks, collaboration, and submissions happen through Discord and Zoom.
+How do teams work? Teams form before or during the sprint. Use the team-forming channels on Discord to find collaborators. Solo is fine. We recommend teams of up to 5, but larger groups are allowed.
+Do tracks affect scoring? All projects are scored on the same rubric. Tracks guide judging via the track-specific criterion, and you compete across all submissions.
+What background is required? None specific. Many participants come from ML, interpretability, AI safety, or security backgrounds. The Resources tab has everything you need to get up to speed. See "Who should join" on the Overview tab.
+Are compute credits provided? No. 
+Do I need to attend all three days? No. You can work at your own pace. Talks are optional but recommended. The only hard deadline is the Sunday submission cutoff.
+Can I participate from any country? Yes. The sprint is open globally.
+Submissions
+What do I submit? A research report in PDF format using the official template. Think of it as a mini research paper documenting your problem, approach, results, and implications, not a product demo. Include the required Limitations and Dual-Use Considerations appendix.
+Which template should I use? Always use the one linked on the Guidelines tab. The template in any acceptance email may be older.
+Will I get a confirmation after submitting? Yes. You will get a confirmation with your project title shortly after submitting. If you do not, email sprints@apartresearch.com.
+My project doesn't show up on the website after submitting. Submissions are published manually and can take up to 12 hours to appear. If it is still missing after that, email sprints@apartresearch.com.
+I made a mistake. Can I fix it or update my PDF? Yes. Submit again using the exact same title and details, just fix what was wrong. Your new files replace the old ones. If unsure, tag @Support on Discord first.
+Can I add team members after submitting? Yes. Update the team list through the submission form. If you need help,tag @Support on Discord.
+Can I submit unfinished work? Yes. Submitting something unfinished is always better than not submitting. Judges evaluate what you accomplished in the timeframe; honest limitations are welcome.
+Can I build on existing research? Yes, but you must clearly identify what is new work done during the sprint. Undisclosed prior work can lead to disqualification.
+Can I submit multiple projects? Yes, but each needs its own submission with a unique title. Most participants focus on one.
+Judging and results
+How does judging work? Your project is assigned to expert judges who review your PDF and score it on the rubric above. Judges typically have about a week after the event to complete reviews.
+Are individual judge scores shared? No. The rubric is public, but individual scores stay internal. Constructive feedback is shared with participants without reviewer names.
+When will results be announced? Typically 1 to 2 weeks after the judging deadline. Winners are contacted directly, and all participants receive reviewer feedback by email.
+Support
+help-desk for questions @Support on Discord.
+Event announcements and updates: Coming Soon in Discord
+projects|teams channel for team formation and finding collaborators.
+Email: sprints@apartresearch.com
