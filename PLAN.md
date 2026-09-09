@@ -33,15 +33,35 @@ Reconstruction corpus + citation ledger, benign baseline stream, prompt taxonomy
 
 ## 2. Technical setup
 
-- **Access:** OpenRouter for one unified async client across hosted + open-weight models. Direct provider SDKs only if a model is unavailable there.
-- **Models (6, fixed before Friday — do not add models mid-run):**
-  1. The assistant family the HF post-mortem reports refusing (Opus-class + Fable-class) — testing the actual participant
-  2. GPT-class frontier (the family whose agent caused the incident)
-  3. **GLM-5.2** — the model that actually did HF's forensic work. Non-negotiable inclusion.
-  4. One more open-weight (Llama/DeepSeek/Qwen-class) as an open-weight control
-  5. One small/fast model as a cost-and-capability floor
+- **Access — REVISED 2026-09-09.** The OpenRouter account cannot be funded; paid
+  models there return HTTP 402. Two surfaces remain, and `harness/client.py`
+  routes to both: **Anthropic first-party** (models prefixed `anthropic:`) and
+  **OpenRouter's `:free` tier** (verified working at a zero balance on
+  2026-09-09 — 5 models, valid JSON, `cost=$0.00`).
+- **Models (9, fixed before Friday — do not add models mid-run):** full table
+  and per-model reachability in PREREGISTRATION.md §8. In short: 4 Anthropic
+  first-party (Opus 5, Fable 5.1, Sonnet 5, Haiku 4.5), 4 OpenRouter free
+  open-weight models, plus `anthropic/claude-opus-5` *via OpenRouter* kept as an
+  aggregator-route control.
+  - **GLM-5.2 is out** (paid-only). TIMELINE.md §5's own contingency applies:
+    substitute the nearest open-weight comparable — `nemotron-3-ultra-550b:free`
+    — and **say so in the abstract**. IDEA.md §2.3's provenance claim weakens
+    from a claim about the historian to a claim about the *class* of
+    compliance-available models.
+  - GPT-class and DeepSeek are also out. This is now one frontier vendor against
+    four open-weight models, not a cross-vendor frontier comparison.
+- **Run this before anything else:** does Anthropic's **first-party** API apply
+  the content filter we measured on OpenRouter? That answer selects the design
+  (PREREGISTRATION.md §8a) and must be obtained before the E1 run starts.
 - **Determinism:** temperature 0, fixed seeds where offered, `n=3` samples per prompt on P0 experiments only. Log model ID string and UTC timestamp for every single call.
-- **Cost:** ≈ 6 models × ~900 calls ≈ 5,400 calls, mostly short → **budget $60–120**. Confirm before Friday. Hard-cap via OpenRouter credit limit so a runaway loop cannot drain the account.
+- **Token budget:** `max_tokens` must exceed `reasoning_tokens + expected content`.
+  GLM-5.2 spent 524 reasoning tokens before its first content token; at a
+  300-token budget it returned empty and would have been scored a refusal.
+  Default 2000.
+- **Cost:** the free tier absorbs all high-volume work ($0). Anthropic spend is
+  controlled by allocation rather than a credit cap: **Haiku and Sonnet absorb
+  volume, Opus is spent only on headline cells** → est. **$25–45**. Check the
+  Anthropic balance before Friday; an unfunded key fails exactly as OpenRouter did.
 - **Caching:** every response written to `runs/{exp}/{model}/{hash}.json` on receipt. Never re-run a completed cell. This is what makes Saturday survivable.
 - **Stack:** Python, `httpx` + `asyncio`, `pydantic` for response schemas, `statsmodels.stats.proportion.proportion_confint` (Wilson), `statsmodels.stats.contingency_tables.mcnemar`, `matplotlib`.
 

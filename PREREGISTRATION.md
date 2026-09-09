@@ -160,26 +160,76 @@ Statistics: `statsmodels` Wilson intervals, McNemar, Cohen's κ. Temperature 0.
 
 ---
 
-## 8. Models
+## 8. Models — REVISED 2026-09-09 under a hard budget constraint
 
-Fixed before Friday; **no models added mid-run.** Reachability status from §3.
+**The OpenRouter account cannot be funded.** Paid models there are
+unreachable (HTTP 402). The available surfaces are an **Anthropic first-party
+API key** and **OpenRouter's `:free` tier**, which was verified working at a
+zero balance on 2026-09-09 (5 models, valid JSON, `cost=$0.00`).
 
-| Role | Model | Status |
-|---|---|---|
-| Refusing assistant family (named in the HF post-mortem) | `anthropic/claude-opus-5` | **filtered** (§3a) |
-| Same family, second member | `anthropic/claude-fable-5.1` | **filtered** (§3a) |
-| Frontier, the family whose agent caused the incident | `openai/gpt-5.6-luna` | reachable |
-| **The model that did HF's forensic work** | `z-ai/glm-5.2` | reachable |
-| Open-weight control | `deepseek/deepseek-v4-pro-0813` | reachable |
-| Cost/capability floor | TODO — pick before Friday | — |
+Fixed before Friday; **no models added mid-run.**
 
-Anthropic models are **retained in the study**. Their unreachability is a
-result, not a reason to drop them. Reported as `filtered`, never as `refused`.
+| Role | Model | Surface | Status |
+|---|---|---|---|
+| Refusing family, named in the HF post-mortem | `anthropic:claude-opus-5` | first-party | **filter status UNKNOWN — decides the branch, see §8a** |
+| Same family, second member | `anthropic:claude-fable-5-1` | first-party | unknown |
+| Mid-tier same family | `anthropic:claude-sonnet-5` | first-party | unknown |
+| Cost/capability floor | `anthropic:claude-haiku-4-5-20251001` | first-party | unknown |
+| Open-weight, large (GLM-5.2 substitute) | `nvidia/nemotron-3-ultra-550b-a55b:free` | free | reachable ✅ |
+| Open-weight, mid | `nvidia/nemotron-3-super-120b-a12b:free` | free | reachable ✅ |
+| Open-weight, small | `inclusionai/ling-3.0-flash-fin:free` | free | reachable ✅ |
+| Open-weight, fourth | `nex-agi/nex-n2.5-pro:free` | free | reachable ✅ |
+| Aggregator-route control | `anthropic/claude-opus-5` (OpenRouter) | OpenRouter | **filtered** (§3a) |
 
-**Budget (measured, not estimated):** GPT-5.6-luna $0.00128/call, GLM-5.2
-$0.00592/call, DeepSeek $0.00096/call. 5,400 calls projects to **$12–32**,
-against PLAN.md's $60–120 estimate. **The account currently has $0 and returns
-HTTP 402** — credit must be added before any run. This is the binding blocker.
+The last row is retained deliberately: the same model on two surfaces is the
+comparison that answers §8a.
+
+### 8a. Pre-declared branch point
+
+Whether Anthropic's **first-party** API applies the content filter observed on
+OpenRouter (§3a) is **unknown and untested**. It is tested first, before any
+other run, and the answer selects the design:
+
+- **Branch A — first-party does NOT filter.** The primary result becomes the
+  **deployment-surface effect**: the same model, same prompt, blocked through
+  an aggregator and permitted first-party. E1/E3 then run across all 8
+  reachable models normally.
+- **Branch B — first-party DOES filter.** The primary result is that Anthropic
+  models are unusable for defensive SOC triage across every surface tested.
+  E1/E3 run on the 4 free models; Anthropic contributes a reachability result.
+
+Committing to both readings in advance so neither can be presented as the
+hypothesis we held all along.
+
+### 8b. What this costs us — disclosed, not minimised
+
+**GLM-5.2 is out.** PLAN.md called it non-negotiable because it is the model
+that actually did HF's forensic work, and IDEA.md §2.3's provenance claim
+("the guardrail selected the historian") depends on testing *that* model. It is
+paid-only. Invoking TIMELINE.md §5's own contingency, we substitute
+`nemotron-3-ultra-550b:free` and **say so in the abstract**.
+
+E4 is accordingly **reframed and weakened**: from "the specific model chosen
+for compliance wrote the public record" to the supportable "compliance-selected
+open-weight models achieve higher Effective Forensic Yield than frontier models
+whose availability is gated." We cannot test the historian, only the class.
+
+Also lost: GPT-class (the family whose agent caused the incident) and DeepSeek.
+The study is no longer cross-vendor in the frontier tier — it is
+**one frontier vendor against four open-weight models**. Stated as a limitation,
+not glossed.
+
+### 8c. Budget
+
+Free tier: **$0**, and it absorbs all high-volume work (E1's ~250 windows ×
+2 streams).
+
+Anthropic first-party, measured shape (~530 prompt, ~1000 completion tokens per
+call): Opus ≈ $0.028/call, Haiku roughly an order of magnitude less. Allocation
+rule: **Haiku and Sonnet absorb volume; Opus is spent only on headline cells**
+(E3's K=40 × 2 frames, and E1 on the attack stream). Estimated Anthropic spend
+under that rule: **$25–45**. Verify the Anthropic account balance before
+Friday — an unfunded key fails exactly as OpenRouter did.
 
 ---
 
