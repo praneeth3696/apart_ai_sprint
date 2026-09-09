@@ -165,8 +165,14 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
                 "phase": phase_name,
                 "host_role": tpl["host_role"],
                 "actor": tpl["actor"],
-                "event": f"[MILESTONE: {m['name']}] {m['note'].strip().splitlines()[0]}",
-                "artifact_refs": [f"milestone://{m['name']}"],
+                # `telemetry` renders the milestone as a plausible log line.
+                # It must NOT name the milestone or quote the source: an
+                # earlier version wrote "[MILESTONE: imds_credentials] <source
+                # quote>" into this field, which is the answer key written
+                # into the text a model under evaluation reads.
+                "event": m["telemetry"],
+                "artifact_refs": [f"log://{phase_name}/{_parse(m['t_utc']).strftime('%Y%m%d')}/ms-{m['name'][:12]}.json"],
+                "milestone_name": m["name"],
                 "mitre_technique": m.get("mitre_technique"),
                 "mitre_tactic": m.get("mitre_tactic"),
                 "mitre_confidence": m.get("mitre_confidence", "unmapped"),
@@ -186,6 +192,7 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
                 "actor": tpl["actor"],
                 "event": tpl["event"],
                 "artifact_refs": [f"log://{phase_name}/{t.strftime('%Y%m%d')}/{random.randint(1000, 9999)}.json"],
+                "milestone_name": None,
                 "mitre_technique": tpl["mitre_technique"],
                 "mitre_tactic": tpl["mitre_tactic"],
                 "mitre_confidence": "synthetic",
@@ -204,6 +211,41 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
         r["action_idx"] = i
 
     return rows
+
+
+# --- model-visible projection -------------------------------------------
+# Fields a model under evaluation is allowed to see. Everything else in a
+# row is ground truth or scoring metadata. With the milestone-anchored
+# escalation rule in force, "carries a pivotal tactic" is equivalent to
+# "is the action we page on", so leaking mitre_tactic alone hands over the
+# answer key. `phase` leaks too - "phase: exfil" is the finding, stated.
+MODEL_VISIBLE_FIELDS = (
+    "action_idx",
+    "t_utc",
+    "host_role",
+    "actor",
+    "event",
+    "artifact_refs",
+)
+
+GROUND_TRUTH_ONLY_FIELDS = (
+    "phase",
+    "mitre_technique",
+    "mitre_tactic",
+    "mitre_confidence",
+    "gt_malicious",
+    "gt_severity",
+    "citation",
+    "is_milestone",
+    "milestone_name",
+    "t_utc_estimated",
+)
+
+
+def render_for_model(rows: list[dict]) -> list[dict]:
+    """Project rows down to the fields a model may see. Every prompt-building
+    path MUST go through this - never hand a raw corpus row to a model."""
+    return [{k: r[k] for k in MODEL_VISIBLE_FIELDS if k in r} for r in rows]
 
 
 if __name__ == "__main__":

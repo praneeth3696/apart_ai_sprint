@@ -23,7 +23,13 @@ from datetime import datetime
 import pytest
 
 from allocate import allocate, load_ground_truth
-from generate_phase import generate_phase
+from escalation import escalation_point, pivotal_fraction
+from generate_phase import (
+    GROUND_TRUTH_ONLY_FIELDS,
+    generate_phase,
+    render_for_model,
+)
+from templates import PHASE_TEMPLATES
 
 PHASE = "k8s"
 
@@ -92,7 +98,7 @@ def test_milestones_present_correctly_ordered_and_tagged(rows, gt):
         f"placed {len(placed)}"
     )
 
-    placed_names = [r["event"].split("MILESTONE: ")[1].split("]")[0] for r in placed]
+    placed_names = [r["milestone_name"] for r in placed]
     expected_names = [m["name"] for m in expected_milestones]
     assert placed_names == expected_names, (
         f"milestone ORDER not preserved: placed {placed_names}, "
@@ -119,7 +125,7 @@ def test_milestone_mitre_tags_come_from_ground_truth_not_random_filler(rows, gt)
     for r in rows:
         if not r["is_milestone"]:
             continue
-        name = r["event"].split("MILESTONE: ")[1].split("]")[0]
+        name = r["milestone_name"]
         expected = by_name[name]
         assert r["mitre_technique"] == expected.get("mitre_technique"), (
             f"{name}: row has mitre_technique={r['mitre_technique']!r}, "
@@ -136,7 +142,7 @@ def test_estimated_milestones_respect_their_own_not_after_bound(rows, gt):
     for r in rows:
         if not r["is_milestone"]:
             continue
-        name = r["event"].split("MILESTONE: ")[1].split("]")[0]
+        name = r["milestone_name"]
         not_after = by_name[name].get("not_after")
         if not_after:
             bound = dt.fromisoformat(not_after.replace("Z", "+00:00"))
@@ -161,3 +167,101 @@ def test_filler_rows_never_masquerade_as_sourced(rows):
                 f"row {r['action_idx']} is filler but its citation doesn't "
                 f"say so: {r['citation']!r}"
             )
+
+
+# --- semantic / fidelity assertions -------------------------------------
+# The seven structural tests above all passed on a corpus whose escalation
+# ground truth fired at action #2 on an invented row. Structure being right
+# is not the same as the data being fit for purpose; these check the latter.
+
+
+def test_no_filler_template_carries_a_pivotal_tactic(gt):
+    """Catches the bug at its source. If a template bank ever regains a
+    Credential Access / Privilege Escalation entry, the escalation ground
+    truth silently becomes an artifact of random.seed() again."""
+    if not gt["corpus_fidelity_constraints"]["filler_may_carry_pivotal_tactic"]:
+        pivotal = set(gt["corpus_fidelity_constraints"]["pivotal_tactics"])
+        for phase_name, bank in PHASE_TEMPLATES.items():
+            offenders = [t["event"] for t in bank if t["mitre_tactic"] in pivotal]
+            assert not offenders, (
+                f"{phase_name} filler bank carries pivotal tactic(s) - these "
+                f"belong to milestones only: {offenders}"
+            )
+
+
+def test_escalation_point_lands_on_a_sourced_milestone(rows, gt):
+    esc = escalation_point(rows, gt)
+    assert esc is not None, "no escalation point found in the k8s phase"
+    assert esc["is_milestone"], (
+        f"escalation ground truth landed on action #{esc['action_idx']}, "
+        f"which is synthetic filler ({esc['event'][:60]!r}) - the "
+        f"pre-registered E1 trigger must be a sourced event, not an "
+        f"artifact of random.seed()"
+    )
+    assert esc["citation"].startswith("ground_truth.yaml#milestones"), (
+        f"escalation row's citation is not a milestone reference: {esc['citation']!r}"
+    )
+
+
+def test_pivotal_tactic_fraction_under_cap(rows, gt):
+    """IDEA.md's framing depends on pivotal actions being the needle, not
+    the haystack. Pre-fix this phase ran at 38%."""
+    cap = gt["corpus_fidelity_constraints"]["max_pivotal_tactic_fraction_per_phase"]
+    frac = pivotal_fraction(rows, gt)
+    assert frac <= cap, (
+        f"{frac:.1%} of rows carry a pivotal tactic, over the {cap:.0%} cap - "
+        f"the needle has become the haystack"
+    )
+
+
+def test_model_visible_projection_leaks_no_ground_truth(rows):
+    """render_for_model() is the only sanctioned path from corpus to prompt.
+    If it ever emits a scoring field, every model result is invalid: with the
+    milestone-anchored rule, mitre_tactic alone identifies the page point."""
+    visible = render_for_model(rows)
+    assert len(visible) == len(rows)
+    for v in visible:
+        leaked = set(v) & set(GROUND_TRUTH_ONLY_FIELDS)
+        assert not leaked, f"model-visible row leaks ground truth: {leaked}"
+
+
+def test_milestone_event_text_does_not_announce_itself(rows, gt):
+    """The event string is read verbatim by the model. It must not name the
+    milestone, say MILESTONE, or quote the source - an earlier version wrote
+    '[MILESTONE: imds_credentials] \"On worker startup...\"' into this field."""
+    names = {m["name"] for m in gt["milestones"]}
+    for r in rows:
+        ev = r["event"]
+        assert "MILESTONE" not in ev.upper(), (
+            f"action #{r['action_idx']} announces itself as a milestone: {ev[:70]!r}"
+        )
+        for n in names:
+            assert n not in ev, (
+                f"action #{r['action_idx']} names milestone {n!r} in its event text"
+            )
+
+
+def test_milestone_and_filler_events_are_indistinguishable_in_shape(rows):
+    """A milestone row that is 5x longer than every filler row is a length
+    side-channel, whatever the text says."""
+    ms = [len(r["event"]) for r in rows if r["is_milestone"]]
+    fl = [len(r["event"]) for r in rows if not r["is_milestone"]]
+    assert ms and fl
+    ratio = (sum(ms) / len(ms)) / (sum(fl) / len(fl))
+    assert 0.4 <= ratio <= 2.5, (
+        f"milestone events average {sum(ms)/len(ms):.0f} chars vs filler "
+        f"{sum(fl)/len(fl):.0f} (ratio {ratio:.2f}) - length alone separates them"
+    )
+
+
+def test_every_pivotal_row_is_a_milestone(rows, gt):
+    pivotal = set(gt["corpus_fidelity_constraints"]["pivotal_tactics"])
+    strays = [
+        r["action_idx"] for r in rows
+        if r.get("mitre_tactic") in pivotal and not r["is_milestone"]
+    ]
+    assert not strays, (
+        f"{len(strays)} filler rows carry a pivotal tactic (action_idx "
+        f"{strays[:10]}) - fabricated pivotal events in a corpus whose "
+        f"claim is that its structure is sourced"
+    )
