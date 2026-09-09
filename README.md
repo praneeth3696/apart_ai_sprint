@@ -108,5 +108,9 @@ results are single-run, text-only, and mediated by OpenRouter.
 - Benign baseline stream not built — this is the false-page control, and the
   headline now depends on it
 - `build_corpus.py` (all-phase merge, global `action_idx`) not written
-- OpenRouter account is at **$0 and returns HTTP 402**; measured full-sprint
-  cost is $12–32
+- **Budget is $0 and will stay $0.** The study runs entirely on 11 verified
+  OpenRouter `:free` models. The frontier family named in the incident is
+  measurable only as blocked / not-blocked, because a content-filtered call
+  bills zero tokens. **GLM-5.2 — the model that did HF's actual forensic
+  work — cannot be tested at all**, so the provenance claim is withdrawn.
+  See PREREGISTRATION.md §8.

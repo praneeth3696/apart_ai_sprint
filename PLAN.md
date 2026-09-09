@@ -33,35 +33,40 @@ Reconstruction corpus + citation ledger, benign baseline stream, prompt taxonomy
 
 ## 2. Technical setup
 
-- **Access — REVISED 2026-09-09.** The OpenRouter account cannot be funded; paid
-  models there return HTTP 402. Two surfaces remain, and `harness/client.py`
-  routes to both: **Anthropic first-party** (models prefixed `anthropic:`) and
-  **OpenRouter's `:free` tier** (verified working at a zero balance on
-  2026-09-09 — 5 models, valid JSON, `cost=$0.00`).
-- **Models (9, fixed before Friday — do not add models mid-run):** full table
-  and per-model reachability in PREREGISTRATION.md §8. In short: 4 Anthropic
-  first-party (Opus 5, Fable 5.1, Sonnet 5, Haiku 4.5), 4 OpenRouter free
-  open-weight models, plus `anthropic/claude-opus-5` *via OpenRouter* kept as an
-  aggregator-route control.
-  - **GLM-5.2 is out** (paid-only). TIMELINE.md §5's own contingency applies:
-    substitute the nearest open-weight comparable — `nemotron-3-ultra-550b:free`
-    — and **say so in the abstract**. IDEA.md §2.3's provenance claim weakens
-    from a claim about the historian to a claim about the *class* of
-    compliance-available models.
-  - GPT-class and DeepSeek are also out. This is now one frontier vendor against
-    four open-weight models, not a cross-vendor frontier comparison.
-- **Run this before anything else:** does Anthropic's **first-party** API apply
-  the content filter we measured on OpenRouter? That answer selects the design
-  (PREREGISTRATION.md §8a) and must be obtained before the E1 run starts.
+- **Access — REVISED 2026-09-09 for a ZERO-DOLLAR budget.** No spend is possible.
+  Every reported number must come from a call that bills $0.00. Two tiers,
+  both verified live rather than assumed:
+  - **Generation tier — 11 OpenRouter `:free` models**, all returning valid JSON
+    at `cost=$0.00` on a negative balance. Full roster in PREREGISTRATION.md §8a.
+    This tier carries E1/E2/E3/E4 in their entirety.
+  - **Reachability tier — Anthropic via OpenRouter, at `max_tokens=300`.** A
+    content-filtered call bills **zero completion tokens**, so blocked calls are
+    free; at 1500 tokens the same call is rejected pre-flight with HTTP 402.
+    Yields one bit per prompt: blocked / not blocked. `HTTP 402` is recorded as
+    `unaffordable` and is **never** counted as a model behaviour.
+- **Models (11 + 2, fixed before Friday — do not add models mid-run):** see
+  PREREGISTRATION.md §8. The free tier already shows real spread —
+  `lfm-2.5-2.6b` returned `page_oncall: false` where every other model paged.
+- **What is gone, and must be in the abstract:** none of the three models named
+  in the incident can be tested for content. **GLM-5.2** is paid-only, so
+  IDEA.md §2.3's provenance claim is **withdrawn, not weakened** — we cannot
+  test the historian. Claude is measurable only as blocked/not-blocked.
+  GPT-class is absent entirely. E4 becomes an open-weight-tier ranking.
+- **Worth 30 minutes before Friday:** other genuinely free tiers (Google AI
+  Studio, GitHub Models — free with the account this repo already uses, Groq,
+  Cerebras, Mistral) could restore a frontier arm at $0. None verified yet; if
+  one works it re-enters and PREREGISTRATION.md §8c is amended with a timestamp.
 - **Determinism:** temperature 0, fixed seeds where offered, `n=3` samples per prompt on P0 experiments only. Log model ID string and UTC timestamp for every single call.
 - **Token budget:** `max_tokens` must exceed `reasoning_tokens + expected content`.
   GLM-5.2 spent 524 reasoning tokens before its first content token; at a
   300-token budget it returned empty and would have been scored a refusal.
   Default 2000.
-- **Cost:** the free tier absorbs all high-volume work ($0). Anthropic spend is
-  controlled by allocation rather than a credit cap: **Haiku and Sonnet absorb
-  volume, Opus is spent only on headline cells** → est. **$25–45**. Check the
-  Anthropic balance before Friday; an unfunded key fails exactly as OpenRouter did.
+- **Cost: $0.00.** The generation tier bills nothing; the reachability tier bills
+  nothing because every counted call is blocked before generation. There is no
+  funding blocker and no runaway-spend risk. **Cost has stopped being a project
+  risk — coverage is the risk now.** Rate limits (HTTP 429 on the free tier)
+  replace budget as the binding constraint: retry with backoff, run overnight,
+  and treat a 429 as retryable, never as a refusal.
 - **Caching:** every response written to `runs/{exp}/{model}/{hash}.json` on receipt. Never re-run a completed cell. This is what makes Saturday survivable.
 - **Stack:** Python, `httpx` + `asyncio`, `pydantic` for response schemas, `statsmodels.stats.proportion.proportion_confint` (Wilson), `statsmodels.stats.contingency_tables.mcnemar`, `matplotlib`.
 

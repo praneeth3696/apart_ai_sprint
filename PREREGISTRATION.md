@@ -116,11 +116,13 @@ uses ATT&CK.
 
 | # | Hypothesis | Pre-declared status |
 |---|---|---|
-| H1 | Models shown identical evidence will escalate in the monitor frame yet refuse in the assistant frame at a rate materially above 0. | **Provisionally falsified** for the 2 reachable models (§3b). Retained for the full K=40 run across all phases. |
+| H1 | Models shown identical evidence will escalate in the monitor frame yet refuse in the assistant frame at a rate materially above 0. | **Provisionally falsified** for the 2 reachable models (§3b). Retained for the full K=40 run across the 11-model free tier. |
 | H2 | Models page late relative to the ground-truth escalation point. | **Open.** §3c suggests the opposite — they may page *early*. |
 | H3 | False-page rate on the matched benign stream is materially above 0. | **Open. Now the primary discriminator** (§3c). |
-| H4 | Compliance-selected open-weight models achieve higher Effective Forensic Yield than frontier models, *because* the latter are unavailable rather than less capable. | **Open, and §3a is direct evidence for the mechanism.** |
+| H4 | ~~Compliance-selected open-weight models achieve higher EFY than frontier models *because* the latter are unavailable.~~ | **WITHDRAWN 2026-09-09.** Untestable at $0: the frontier tier yields only blocked/not-blocked (§8b), so `correctness \| comply` does not exist for it. Replaced by H4′. |
+| H4′ | Within the open-weight tier, EFY varies materially across models, and the ranking is not simply model size. | **Open.** Testable at $0 across 11 models. |
 | H5 | Fabricated IOC rate is > 0 for at least one model. | **Open.** |
+| H6 | The frontier family named in the HF post-mortem is blocked on defensive SOC prompts at a rate materially above the open-weight tier's refusal rate. | **Open, and §3a is direct evidence.** This is the surviving form of the study's original two-sided claim. |
 
 **Null results are publishable here and we commit to publishing them.**
 Per PLAN.md §5 every branch has a headline; §3b already moves us onto the
@@ -160,76 +162,93 @@ Statistics: `statsmodels` Wilson intervals, McNemar, Cohen's κ. Temperature 0.
 
 ---
 
-## 8. Models — REVISED 2026-09-09 under a hard budget constraint
+## 8. Models — REVISED 2026-09-09 for a **zero-dollar** budget
 
-**The OpenRouter account cannot be funded.** Paid models there are
-unreachable (HTTP 402). The available surfaces are an **Anthropic first-party
-API key** and **OpenRouter's `:free` tier**, which was verified working at a
-zero balance on 2026-09-09 (5 models, valid JSON, `cost=$0.00`).
+**No spend is possible.** The OpenRouter account is unfunded and no other paid
+API is available. Every number in this study must come from calls that bill
+$0.00. Verified live on 2026-09-09 rather than assumed.
 
-Fixed before Friday; **no models added mid-run.**
+### 8a. The generation tier — 11 free models
 
-| Role | Model | Surface | Status |
-|---|---|---|---|
-| Refusing family, named in the HF post-mortem | `anthropic:claude-opus-5` | first-party | **filter status UNKNOWN — decides the branch, see §8a** |
-| Same family, second member | `anthropic:claude-fable-5-1` | first-party | unknown |
-| Mid-tier same family | `anthropic:claude-sonnet-5` | first-party | unknown |
-| Cost/capability floor | `anthropic:claude-haiku-4-5-20251001` | first-party | unknown |
-| Open-weight, large (GLM-5.2 substitute) | `nvidia/nemotron-3-ultra-550b-a55b:free` | free | reachable ✅ |
-| Open-weight, mid | `nvidia/nemotron-3-super-120b-a12b:free` | free | reachable ✅ |
-| Open-weight, small | `inclusionai/ling-3.0-flash-fin:free` | free | reachable ✅ |
-| Open-weight, fourth | `nex-agi/nex-n2.5-pro:free` | free | reachable ✅ |
-| Aggregator-route control | `anthropic/claude-opus-5` (OpenRouter) | OpenRouter | **filtered** (§3a) |
+All verified working at a negative balance, returning valid JSON at
+`cost=$0.00`, with `max_tokens=1500`:
 
-The last row is retained deliberately: the same model on two surfaces is the
-comparison that answers §8a.
+| Role | Model | Params |
+|---|---|---|
+| Large open-weight (GLM-5.2 substitute) | `nvidia/nemotron-3-ultra-550b-a55b:free` | 550B |
+| Mid open-weight | `nvidia/nemotron-3-super-120b-a12b:free` | 120B |
+| Reasoning-style | `nvidia/nemotron-3.5-lightning:free` | — |
+| Code-oriented | `cohere/north-mini-code:free` | — |
+| General | `dots-studio/dots-3-note-preview:free` | — |
+| General | `inclusionai/ling-3.0-flash-fin:free` | — |
+| General | `inclusionai/ling-3.0-flash-sante:free` | — |
+| General | `nex-agi/nex-n2.5-pro:free` | — |
+| Small | `nex-agi/nex-n2.5-mini:free` | — |
+| **Capability floor** | `liquid/lfm-2.5-2.6b:free` | 2.6B |
+| **Safety classifier** | `nvidia/nemotron-3.5-content-safety:free` | — |
 
-### 8a. Pre-declared branch point
+11 models is **more** than the original 6-model plan, and the tier already
+shows spread on the smoke prompt: `lfm-2.5-2.6b` returned
+`page_oncall: false` where every other model paged, and `nemotron-3-ultra`
+returned `medium` where others returned `critical`. Variance is what makes EAI
+and false-page rate measurable.
 
-Whether Anthropic's **first-party** API applies the content filter observed on
-OpenRouter (§3a) is **unknown and untested**. It is tested first, before any
-other run, and the answer selects the design:
+Unavailable free models, recorded so the roster is reproducible:
+`gemma-4-*` and `laguna-*` (HTTP 429 at time of test),
+`thinkingmachines/inkling*` (403, agentic harnesses only),
+`nemotron-3-nano-omni` (empty response).
 
-- **Branch A — first-party does NOT filter.** The primary result becomes the
-  **deployment-surface effect**: the same model, same prompt, blocked through
-  an aggregator and permitted first-party. E1/E3 then run across all 8
-  reachable models normally.
-- **Branch B — first-party DOES filter.** The primary result is that Anthropic
-  models are unusable for defensive SOC triage across every surface tested.
-  E1/E3 run on the 4 free models; Anthropic contributes a reachability result.
+### 8b. The reachability tier — Anthropic, measurable at $0
 
-Committing to both readings in advance so neither can be presented as the
-hypothesis we held all along.
+A content-filtered call bills **zero completion tokens**. Verified: at
+`max_tokens=300`, `anthropic/claude-opus-5` and `anthropic/claude-fable-5.1`
+both return `finish_reason=content_filter` with `cost=$None`. At
+`max_tokens=1500` the same call is rejected pre-flight with HTTP 402.
 
-### 8b. What this costs us — disclosed, not minimised
+So the Anthropic arm runs at $0 **for blocked calls only**, and yields exactly
+one bit per prompt: *blocked / not blocked*.
 
-**GLM-5.2 is out.** PLAN.md called it non-negotiable because it is the model
-that actually did HF's forensic work, and IDEA.md §2.3's provenance claim
-("the guardrail selected the historian") depends on testing *that* model. It is
-paid-only. Invoking TIMELINE.md §5's own contingency, we substitute
-`nemotron-3-ultra-550b:free` and **say so in the abstract**.
+- **We can measure:** the rate at which the frontier family named in the HF
+  post-mortem is blocked, across prompts, frames, and framing rungs.
+- **We cannot measure:** anything those models would have *said*. An unblocked
+  call either bills (unaffordable) or returns 402. `HTTP 402` is recorded as
+  `unaffordable`, a **distinct outcome from both `filtered` and `refused`**,
+  and is never counted as a model behaviour.
 
-E4 is accordingly **reframed and weakened**: from "the specific model chosen
-for compliance wrote the public record" to the supportable "compliance-selected
-open-weight models achieve higher Effective Forensic Yield than frontier models
-whose availability is gated." We cannot test the historian, only the class.
+All runs pin `max_tokens=300` on this tier, and that cap is a stated
+methodological limitation, not a free parameter.
 
-Also lost: GPT-class (the family whose agent caused the incident) and DeepSeek.
-The study is no longer cross-vendor in the frontier tier — it is
-**one frontier vendor against four open-weight models**. Stated as a limitation,
-not glossed.
+### 8c. What is lost — disclosed, not minimised
 
-### 8c. Budget
+This is the largest limitation in the study and belongs in the abstract.
 
-Free tier: **$0**, and it absorbs all high-volume work (E1's ~250 windows ×
-2 streams).
+**None of the three models named in the incident can be tested for content.**
+- **GLM-5.2** — the model that actually did HF's forensic work. Paid-only.
+  IDEA.md §2.3's provenance claim ("the guardrail selected the historian")
+  **cannot be tested at all** and is withdrawn, not weakened. Invoking
+  TIMELINE.md §5's contingency we substitute `nemotron-3-ultra-550b:free` for
+  the open-weight role and say so in the abstract, but the substitute is not
+  the historian and we do not imply otherwise.
+- **Claude Opus / Fable** — measurable only as blocked/not-blocked (§8b).
+- **GPT-class** — paid-only. Absent entirely.
 
-Anthropic first-party, measured shape (~530 prompt, ~1000 completion tokens per
-call): Opus ≈ $0.028/call, Haiku roughly an order of magnitude less. Allocation
-rule: **Haiku and Sonnet absorb volume; Opus is spent only on headline cells**
-(E3's K=40 × 2 frames, and E1 on the attack stream). Estimated Anthropic spend
-under that rule: **$25–45**. Verify the Anthropic account balance before
-Friday — an unfunded key fails exactly as OpenRouter did.
+**E4 (Effective Forensic Yield) is therefore an open-weight-tier ranking**, not
+a frontier-vs-open comparison. `P(comply)` and `correctness | comply` are
+computed only over the 11 free models. The frontier tier contributes a
+reachability rate and nothing else.
+
+**Worth pursuing before Friday (would materially strengthen the study):** other
+genuinely free API tiers could restore a frontier arm at $0 — Google AI Studio
+(Gemini), GitHub Models (free with the GitHub account this repo already uses),
+Groq, Cerebras, Mistral. None are verified yet. If any works, it re-enters as a
+frontier arm and this section is amended with a timestamp.
+
+### 8d. Budget
+
+**$0.00.** Generation tier bills nothing. Anthropic tier bills nothing because
+every counted call is blocked before generation. There is no funding blocker
+and no runaway-spend risk. Cost is no longer a project risk at all — coverage
+is.
 
 ---
 
