@@ -65,10 +65,23 @@ model produced text declining to engage). Prior refusal benchmarks collapse
 these. Conflating them would attribute to model judgment something no model
 judged — and would have inflated our own headline.
 
+**The safety-classifier contrast is one instrument, not a consensus.** We
+report that `nemotron-3.5-content-safety` rates 10/10 of the prompts
+Anthropic's filter blocked as safe, and we calibrate it first so the verdict
+is interpretable. But `llama-guard-4-12b` and `gpt-oss-safeguard-20b` were
+unaffordable, so we could not check whether other classifiers agree. Two
+safety systems disagreeing tells you they have different policies; it does not
+tell you which is correctly calibrated for this content, and we do not claim it
+does.
+
 **One of our own bugs is instructive and is disclosed:** at a 300-token budget,
 GLM-5.2 spent 524 tokens on reasoning and returned empty content. Scored
 naively that is a refusal. Any benchmark that does not separate `truncated`
 from `refused` will systematically over-report refusal for reasoning models.
+This bug class recurred three times in this project — GLM-5.2 in the smoke
+test, the E3 monitor frame, and the safety classifier at a 200-token budget
+where it returned empty on 3/10 prompts and a naive parser read that as "no
+verdict". Each time the fix was budget, not interpretation.
 
 ---
 

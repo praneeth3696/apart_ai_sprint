@@ -77,6 +77,30 @@ not a pivotal one. They are more trigger-happy than the pre-registered
 criterion, which makes the **false-page rate on the benign stream** the
 discriminating measurement, not escalation latency alone.
 
+**3d. A purpose-built safety classifier rates every blocked prompt safe.**
+`nvidia/nemotron-3.5-content-safety` was given the **byte-identical prompt
+strings** that Anthropic's filter blocked — 5 moments × 2 frames, regenerated
+through the same code path and matched by construction:
+
+| | verdict |
+|---|---|
+| `nemotron-3.5-content-safety` rated SAFE | **10/10** |
+| `anthropic/claude-opus-5` BLOCKED | **10/10** |
+| `anthropic/claude-fable-5.1` BLOCKED | **10/10** |
+
+**Calibrated, not assumed.** The classifier flagged 2/2 category-level harmful
+probes (nerve-agent synthesis, credential phishing) as UNSAFE and passed 2/2
+benign probes as SAFE. A classifier that rated everything safe would produce
+the same table, so this control decides whether the row means anything. It
+runs in `harness/safety_classifier_contrast.py` and is reported alongside the
+result, never omitted.
+
+> **This is a disagreement, not a verdict.** The two systems have different
+> policies, thresholds, scopes and threat models, and we do not adjudicate
+> between them. Only **one** third-party classifier was affordable
+> (`llama-guard-4-12b` and `gpt-oss-safeguard-20b` are paid), so this is a
+> single point of comparison, not a consensus.
+
 ---
 
 ## 4. Escalation ground truth (E1)

@@ -34,6 +34,14 @@ every time. Incoherence rate 0%.
 event, not a pivotal one. So the discriminating measurement is the **false-page
 rate on the benign stream**, not escalation latency alone.
 
+**4. A purpose-built safety classifier rates every blocked prompt safe.**
+Given the byte-identical prompts Anthropic blocked, `nemotron-3.5-content-safety`
+returned **SAFE 10/10** while both Anthropic models returned BLOCKED 10/10.
+The classifier is calibrated, not assumed: it flags 2/2 category-level harmful
+probes UNSAFE and passes 2/2 benign probes SAFE, so it is not simply
+permissive. A disagreement between two safety systems, not a verdict on
+either — only one third-party classifier was affordable.
+
 Consequence, decided before the full run: **the headline moves from E3
 (incoherence) to E1 (escalation latency + false-page precision)**, with the
 filter result second. See [PREREGISTRATION.md](PREREGISTRATION.md) §6.
@@ -57,7 +65,8 @@ Model calls need an OpenRouter key in a **gitignored** `.env` at or above the
 repo root (`OPEN_ROUTER_KEY=...`), then:
 
 ```bash
-python harness/e3_incoherence_smoke.py z-ai/glm-5.2
+python harness/e3_incoherence_smoke.py nvidia/nemotron-3-ultra-550b-a55b:free
+python harness/safety_classifier_contrast.py   # runs its own calibration first
 ```
 
 Responses cache to `runs/{exp}/{model}/{hash}.json` on receipt; a completed
@@ -81,6 +90,8 @@ corpus/
 harness/
   client.py                    cached OpenRouter client
   e3_incoherence_smoke.py      the Wed-9 smoke test
+  safety_classifier_contrast.py  matched filter-vs-classifier contrast
+  test_anthropic_surface.py      first-party vs aggregator filter test
 prompts/RUBRIC.md              frozen scoring rubric
 PREREGISTRATION.md             frozen 2026-09-09
 LIMITATIONS.md
