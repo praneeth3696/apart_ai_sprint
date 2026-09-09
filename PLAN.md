@@ -33,15 +33,40 @@ Reconstruction corpus + citation ledger, benign baseline stream, prompt taxonomy
 
 ## 2. Technical setup
 
-- **Access:** OpenRouter for one unified async client across hosted + open-weight models. Direct provider SDKs only if a model is unavailable there.
-- **Models (6, fixed before Friday — do not add models mid-run):**
-  1. The assistant family the HF post-mortem reports refusing (Opus-class + Fable-class) — testing the actual participant
-  2. GPT-class frontier (the family whose agent caused the incident)
-  3. **GLM-5.2** — the model that actually did HF's forensic work. Non-negotiable inclusion.
-  4. One more open-weight (Llama/DeepSeek/Qwen-class) as an open-weight control
-  5. One small/fast model as a cost-and-capability floor
+- **Access — REVISED 2026-09-09 for a ZERO-DOLLAR budget.** No spend is possible.
+  Every reported number must come from a call that bills $0.00. Two tiers,
+  both verified live rather than assumed:
+  - **Generation tier — 11 OpenRouter `:free` models**, all returning valid JSON
+    at `cost=$0.00` on a negative balance. Full roster in PREREGISTRATION.md §8a.
+    This tier carries E1/E2/E3/E4 in their entirety.
+  - **Reachability tier — Anthropic via OpenRouter, at `max_tokens=300`.** A
+    content-filtered call bills **zero completion tokens**, so blocked calls are
+    free; at 1500 tokens the same call is rejected pre-flight with HTTP 402.
+    Yields one bit per prompt: blocked / not blocked. `HTTP 402` is recorded as
+    `unaffordable` and is **never** counted as a model behaviour.
+- **Models (11 + 2, fixed before Friday — do not add models mid-run):** see
+  PREREGISTRATION.md §8. The free tier already shows real spread —
+  `lfm-2.5-2.6b` returned `page_oncall: false` where every other model paged.
+- **What is gone, and must be in the abstract:** none of the three models named
+  in the incident can be tested for content. **GLM-5.2** is paid-only, so
+  IDEA.md §2.3's provenance claim is **withdrawn, not weakened** — we cannot
+  test the historian. Claude is measurable only as blocked/not-blocked.
+  GPT-class is absent entirely. E4 becomes an open-weight-tier ranking.
+- **Worth 30 minutes before Friday:** other genuinely free tiers (Google AI
+  Studio, GitHub Models — free with the account this repo already uses, Groq,
+  Cerebras, Mistral) could restore a frontier arm at $0. None verified yet; if
+  one works it re-enters and PREREGISTRATION.md §8c is amended with a timestamp.
 - **Determinism:** temperature 0, fixed seeds where offered, `n=3` samples per prompt on P0 experiments only. Log model ID string and UTC timestamp for every single call.
-- **Cost:** ≈ 6 models × ~900 calls ≈ 5,400 calls, mostly short → **budget $60–120**. Confirm before Friday. Hard-cap via OpenRouter credit limit so a runaway loop cannot drain the account.
+- **Token budget:** `max_tokens` must exceed `reasoning_tokens + expected content`.
+  GLM-5.2 spent 524 reasoning tokens before its first content token; at a
+  300-token budget it returned empty and would have been scored a refusal.
+  Default 2000.
+- **Cost: $0.00.** The generation tier bills nothing; the reachability tier bills
+  nothing because every counted call is blocked before generation. There is no
+  funding blocker and no runaway-spend risk. **Cost has stopped being a project
+  risk — coverage is the risk now.** Rate limits (HTTP 429 on the free tier)
+  replace budget as the binding constraint: retry with backoff, run overnight,
+  and treat a 429 as retryable, never as a refusal.
 - **Caching:** every response written to `runs/{exp}/{model}/{hash}.json` on receipt. Never re-run a completed cell. This is what makes Saturday survivable.
 - **Stack:** Python, `httpx` + `asyncio`, `pydantic` for response schemas, `statsmodels.stats.proportion.proportion_confint` (Wilson), `statsmodels.stats.contingency_tables.mcnemar`, `matplotlib`.
 
