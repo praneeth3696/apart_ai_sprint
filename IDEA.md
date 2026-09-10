@@ -4,7 +4,19 @@
 
 > Final title must state the **number you actually find**, not the topic. E.g. *"Frontier models declined to page on 71% of attack windows and declined to analyse the same bytes 44% of the time."* Apart's own publishing guidance asks for finding-stating titles.
 
-**Tracks:** Primary **Track 2** (Incident Analysis & Warning Shot Insights) × Secondary **Track 5** (Open Track — the defender's dilemma), with a deliverable that lands in **Track 1** (control verification).
+**Tracks (corrected 2026-09-10 against the live sprint page):** Primary
+**Track 2 — Incident Reconstruction & Forecasting**, whose stated criterion is
+*"resolvable questions, actionable checks, predictive causal explanations"* — a
+description of the EAI leaderboard and the false-page rate. Named crossover:
+**Track 1 — Containment Standards**, judged on *"verifiability without lab
+network access"*, which is exactly what a replay corpus built from public
+figures is for.
+
+> The earlier draft of this line read *"Track 2 (Incident Analysis & Warning
+> Shot Insights) × Track 5 (Open Track)"*. Those are not the sprint's tracks.
+> The five are: 1 Containment Standards · 2 Incident Reconstruction &
+> Forecasting · 3 Regulatory Response · 4 Communication & Warning Shots ·
+> 5 Open Track. We claim two, not three — claiming three reads as hedging.
 
 ---
 
@@ -36,7 +48,7 @@ From Hugging Face's technical timeline (27 July 2026), OpenAI's disclosure (21 J
 
 ### 2.2 The insight nobody has written down
 
-Every published analysis treats these as two stories. Elastic owns the detection story. Gray Swan / Scale / Meta CyberSecEval own the refusal story. The sprint page itself splits them across Track 2 and Track 5.
+Every published analysis treats these as two stories. Elastic owns the detection story. Gray Swan / Scale / Meta CyberSecEval own the refusal story. The sprint page itself splits them: the detection story sits in Track 2, the refusal story falls to the Open Track.
 
 But look at what actually happened: **the same class of model, asked the same underlying question — "is this security situation dangerous?" — got it wrong in both directions within 96 hours of the same incident.** Under-alarm when monitoring. Over-alarm when assisting.
 
@@ -106,7 +118,9 @@ Fill the 2×2. The cell of interest is **(does not escalate, does not assist)** 
 `EFY = P(comply) × accuracy | comply`. Rank models. Where does the compliance-selected open-weight model land against the refusing frontier models? Plus **fabrication rate** — hallucinated IOCs and invented timeline events per response, a metric no security-refusal benchmark currently reports and the one that matters most for evidentiary integrity.
 
 ### 4.3 `Responder Mode` — the practical artifact
-A short spec for the minimum properties an AI assistant must satisfy to be usable in incident response — monitor/assistant coherence, bounded false-page rate, non-fabrication, auditable refusal reasons — plus the eval suite that measures them. Directly answers Track 5's *"artifacts with practical utility"* and Track 2's *"actionable checks implementable immediately."*
+A short spec for the minimum properties an AI assistant must satisfy to be usable in incident response — monitor/assistant coherence, bounded false-page rate, non-fabrication, auditable refusal reasons — plus the eval suite that measures them. Directly answers Track 5's stated criterion — *"usable artifact; stated
+limitations; clear follow-up roadmap"* — and Track 2's *"actionable checks"*.
+It is P2: it ships only if E0/E1/E3 are already done.
 
 ---
 

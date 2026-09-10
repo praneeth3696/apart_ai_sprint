@@ -19,6 +19,13 @@ opened:
 - `harness/client.py`, `harness/e3_incoherence_smoke.py` — the Wed-9 smoke test.
 - This document, `prompts/RUBRIC.md`, `corpus/answer_keys/FORMAT.md`.
 - The findings in §3 below, from 30 model calls made 2026-09-09.
+- `harness/e0_baselines.py`, `harness/measure_limits.py`, `harness/PROVIDERS.md`,
+  `SPRINT_PLAN.md`, `PRIMER.md` — written 2026-09-10. **E0 was run once on the
+  87-action k8s prototype on 2026-09-10** to prove the pipeline; that output is
+  in `analysis/e0_baselines.json` and is **not a reported result** — it has no
+  benign stream, so it has no false-page denominator and is not interpretable.
+  Every E0 number in the report comes from a run on the full corpus during the
+  sprint.
 
 Built **during** the sprint: the full 9-phase + unclassified corpus, the benign
 baseline stream, all of E1/E2/E3/E4, and every reported number except §3.
@@ -52,18 +59,42 @@ first/last timestamps, daily volumes, milestone ordering.
 
 Reported here so they cannot be retrofitted later.
 
-**3a. Anthropic models are blocked by a platform content filter on defensive
-SOC triage.** `anthropic/claude-opus-5` and `anthropic/claude-fable-5.1`
-returned `finish_reason=content_filter`, 0 completion tokens, on **both** the
-monitor frame and the assistant frame, for all 5 pivotal moments. The block is
-**not route-specific**: identical via OpenRouter auto-route, `Anthropic`
-direct, and `Amazon Bedrock`. It persists after removing the IMDS and
-privileged-pod lines from the evidence. The same model answers a trivial prompt
-normally, so it is reachable — the block is specific to this content.
+**3a. Requests to Claude models *via OpenRouter* are blocked before generation
+on defensive SOC triage.** `anthropic/claude-opus-5` and
+`anthropic/claude-fable-5.1` returned `finish_reason=content_filter`, 0
+completion tokens, on **both** the monitor frame and the assistant frame, for
+all 5 pivotal moments. Identical via OpenRouter auto-route, `Anthropic` direct,
+and `Amazon Bedrock`. It persists after removing the IMDS and privileged-pod
+lines from the evidence. The same model answers a trivial prompt normally, so
+the endpoint is reachable — the block is specific to this content.
 
 > This is a **filter**, not a refusal. The model never saw the prompt. We will
 > not report it as model judgment, and `filtered` is a distinct outcome class
 > in the rubric.
+
+> **ATTRIBUTION IS OPEN — amended 2026-09-10, before the full run, on no new
+> data.** The heading of this section previously read *"Anthropic models are
+> blocked by a platform content filter"*, and the paragraph offered
+> route-invariance as evidence for that reading. **Route-invariance argues the
+> other way.** If a moderation layer sits in OpenRouter's own stack, in front of
+> every route it offers, then auto / Anthropic-direct / Bedrock block
+> identically — which is precisely what we observed. Two further tells point
+> the same direction: Anthropic's first-party API signals a model-side decline
+> as `stop_reason: "refusal"`, not an OpenAI-style
+> `finish_reason: "content_filter"` with zero completion tokens; and the
+> aggregator documents both input-side blocking and provider-level output
+> moderation of its own.
+>
+> We therefore report **what we measured** — requests on this route are blocked
+> before generation — and **do not attribute the block to a layer** until the
+> first-party test in §9 resolves it. `client.py` already carries the
+> first-party path (`anthropic:<model>`); it needs a key, not new code.
+>
+> This costs us the more quotable sentence and we are making the trade
+> deliberately. Correctly attributed, the finding is not weaker but different,
+> and arguably more useful: aggregators are how small defenders and
+> under-resourced CSIRTs actually reach frontier models, so a moderation layer
+> the defender did not choose and cannot see is itself a verification gap.
 
 **3b. No incoherence visible in the reachable models.**
 `openai/gpt-5.6-luna` and `z-ai/glm-5.2`: **5/5 coherent-alarm** each —
@@ -79,8 +110,8 @@ discriminating measurement, not escalation latency alone.
 
 **3d. A purpose-built safety classifier rates every blocked prompt safe.**
 `nvidia/nemotron-3.5-content-safety` was given the **byte-identical prompt
-strings** that Anthropic's filter blocked — 5 moments × 2 frames, regenerated
-through the same code path and matched by construction:
+strings** that were blocked on the Claude route — 5 moments × 2 frames,
+regenerated through the same code path and matched by construction:
 
 | | verdict |
 |---|---|
@@ -146,7 +177,7 @@ uses ATT&CK.
 | H4 | ~~Compliance-selected open-weight models achieve higher EFY than frontier models *because* the latter are unavailable.~~ | **WITHDRAWN 2026-09-09.** Untestable at $0: the frontier tier yields only blocked/not-blocked (§8b), so `correctness \| comply` does not exist for it. Replaced by H4′. |
 | H4′ | Within the open-weight tier, EFY varies materially across models, and the ranking is not simply model size. | **Open.** Testable at $0 across 11 models. |
 | H5 | Fabricated IOC rate is > 0 for at least one model. | **Open.** |
-| H6 | The frontier family named in the HF post-mortem is blocked on defensive SOC prompts at a rate materially above the open-weight tier's refusal rate. | **Open, and §3a is direct evidence.** This is the surviving form of the study's original two-sided claim. |
+| H6 | The frontier family named in the HF post-mortem is blocked on defensive SOC prompts, on at least one commonly-used access route, at a rate materially above the open-weight tier's refusal rate. | **Open, and §3a is direct evidence for the OpenRouter route.** This is the surviving form of the study's original two-sided claim. Note the amended wording: the hypothesis is about *reachability on a route*, not about a named company's policy, until §9's first-party test resolves attribution. |
 
 **Null results are publishable here and we commit to publishing them.**
 Per PLAN.md §5 every branch has a headline; §3b already moves us onto the
@@ -160,7 +191,7 @@ The smoke test asked "is the incoherence effect visible at all?" — **it is
 not**, in either reachable model. Invoking PLAN.md's own contingency:
 
 > **The headline moves from E3 (Incoherence) to E1 (escalation latency +
-> false-page precision), with §3a — platform-filter unreachability — as the
+> false-page precision), with §3a — route-level unreachability — as the
 > second result.**
 
 E3 still runs at K=40 across all phases: 0/5 on pivotal k8s moments does not
@@ -281,6 +312,10 @@ is.
 | UTC | Change | Made before or after seeing data? |
 |---|---|---|
 | 2026-09-09 | Initial freeze. | §3 findings pre-date the freeze and are disclosed in §3 rather than presented as predictions. |
+| 2026-09-10 | **§3a attribution withdrawn; H6 reworded from a claim about a vendor to a claim about a route.** Reason: route-invariance across OpenRouter auto / Anthropic-direct / Bedrock is the signature of an aggregator-side filter, not evidence against one, and the observed `finish_reason=content_filter` signature is not the one Anthropic's first-party API emits for a model-side decline. The measurement is unchanged; only the attribution is withdrawn. | **Before.** No new data — this is a re-reading of the argument already in §3a. |
+| 2026-09-10 | **E0 (non-LLM rule baselines) added** as a new experiment: three detectors (severity oracle, volume spike, keyword/Sigma set) over the same streams, same windowing, same escalation ground truth. Zero API calls. Reason: E1's numbers are not interpretable without a non-model comparator — see `SPRINT_PLAN.md` §1.2. Metrics are the ones already defined in §7 (EAI, page rate, Wilson CI); no new metric is introduced. | **Before the full-corpus E0 run.** The detectors were exercised once on the 87-action k8s prototype the same day, to prove the pipeline; that output carries no benign stream and is disclosed in §1 as pre-sprint tooling, not as a result. |
+| 2026-09-10 | **§8c acted on.** Provider acquisition moved from "worth pursuing" to an owned task with a measurement protocol (`harness/PROVIDERS.md`, `harness/measure_limits.py`). Any provider that verifies re-enters the roster through a further amendment here, timestamped. | **Before.** |
+| 2026-09-10 | **Throughput declared the binding constraint.** §8d says cost stopped being a project risk and coverage became one; we now name the specific mechanism: the free-tier daily request cap, unmeasured at freeze time. E1 window count is sized from a measured cap rather than fixed at the 250 in `PLAN.md` §3. Sampling is stratified (every milestone-carrying window, plus a random sample of the rest, plus a size-matched benign sample) and is reported as a design choice in Methodology. | **Before.** |
 
 ---
 
@@ -291,8 +326,10 @@ is.
 - Prompt framing is not authentication. A model reading "I am HF's IR team"
   cannot verify it.
 - Single-run, text-only, English-only. No multi-turn drift, no tool use.
-- §3a is measured **through OpenRouter**. Consistent across three provider
-  routes, but we have not tested Anthropic's first-party API directly, and we
-  will say so.
+- §3a is measured **through OpenRouter**. Consistent across three of that
+  aggregator's provider routes, but we have not tested Anthropic's first-party
+  API directly. **Which layer imposes the block is unresolved**, and until it is
+  we describe the observation without attributing it. See §3a's amendment note
+  and §9.
 - 75% of the corpus (recon + dropper, 13,163 actions) has **no sourced
   milestone**; it is filler obeying published marginals.

@@ -4,3 +4,6 @@ __pycache__/
 .env
 .env.*
 runs/
+.venv/
+.DS_Store
+harness/measured_limits.json
