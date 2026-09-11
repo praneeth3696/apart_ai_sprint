@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from allocate import allocate, load_ground_truth
-from templates import PHASE_TEMPLATES
+from templates import PHASE_TEMPLATES, render_event
 
 random.seed(20260904)  # deterministic for the prototype; re-seed per run for the real build
 
@@ -190,7 +190,11 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
                 "phase": phase_name,
                 "host_role": tpl["host_role"],
                 "actor": tpl["actor"],
-                "event": tpl["event"],
+                # render_event fills {placeholders} per row. Without it the
+                # bulk phases would be ~14 fixed strings repeated hundreds of
+                # times each, which is its own separability signal and does
+                # not look like a log (templates.py RULE 5).
+                "event": render_event(tpl["event"], random),
                 "artifact_refs": [f"log://{phase_name}/{t.strftime('%Y%m%d')}/{random.randint(1000, 9999)}.json"],
                 "milestone_name": None,
                 "mitre_technique": tpl["mitre_technique"],
