@@ -7,3 +7,5 @@ runs/
 .venv/
 .DS_Store
 harness/measured_limits.json
+corpus/prototype_*.jsonl
+!corpus/prototype_k8s.jsonl

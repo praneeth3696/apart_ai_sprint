@@ -116,8 +116,16 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
     phases, days, matrix = allocate()
 
     phase_cfg = next(p for p in gt["phases"] if p["name"] == phase_name)
-    phase_first = _parse(phase_cfg["first_seen"])
-    phase_last = _parse(phase_cfg["last_seen"])
+    # `unclassified` is not a kill-chain phase and has no published first/last
+    # seen - it is the residual absorbing the 1,092-action gap between the two
+    # published tables. Fall back to the campaign window rather than crashing
+    # in _parse(None).
+    phase_first = _parse(phase_cfg["first_seen"] or gt["campaign_window"]["start_utc"])
+    phase_last = _parse(phase_cfg["last_seen"] or gt["campaign_window"]["end_utc"])
+    # Malicious by default; `unclassified` sets it false in ground_truth.yaml.
+    # Read it, never assume it - these 1,092 rows are 6.2% of the corpus and
+    # mislabelling them would corrupt every gt_malicious-derived number.
+    phase_malicious = phase_cfg.get("gt_malicious", True)
     phase_idx = phases.index(phase_name)
     day_counts = dict(zip(days, matrix[phase_idx].tolist()))
 
@@ -176,7 +184,7 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
                 "mitre_technique": m.get("mitre_technique"),
                 "mitre_tactic": m.get("mitre_tactic"),
                 "mitre_confidence": m.get("mitre_confidence", "unmapped"),
-                "gt_malicious": True,
+                "gt_malicious": phase_malicious,
                 "gt_severity": phase_cfg["default_severity"],
                 "citation": f"ground_truth.yaml#milestones[{m['name']}]",
                 "is_milestone": True,
@@ -200,7 +208,7 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
                 "mitre_technique": tpl["mitre_technique"],
                 "mitre_tactic": tpl["mitre_tactic"],
                 "mitre_confidence": "synthetic",
-                "gt_malicious": True,
+                "gt_malicious": phase_malicious,
                 "gt_severity": tpl.get("severity", phase_cfg["default_severity"]),
                 "citation": "synthetic filler - template bank, not sourced (scaffold per PLAN.md)",
                 "is_milestone": False,

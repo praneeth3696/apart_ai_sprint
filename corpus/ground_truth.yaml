@@ -145,10 +145,16 @@ phases:
 
   - name: unclassified
     actions: 1092
-    first_seen: null
+    first_seen: null   # not a kill-chain phase; falls back to campaign_window
     last_seen: null
     days_eligible: ["07-09", "07-10", "07-11", "07-12", "07-13"]
     default_severity: info
+    # STRUCTURED, because the generator has to read it. Until now the claim
+    # "gt_malicious=false by default" lived only in the prose of `source`
+    # below, while generate_phase.py hardcoded gt_malicious=True for every
+    # row - so these 1,092 rows would have been labelled malicious in the
+    # attack stream, contradicting the reconciliation that created them.
+    gt_malicious: false
     source: >
       Inferred, not itemized in source. See phase_total_reconciliation:
       the daily-volume table sums to 17,613 while the 9 named phases sum
