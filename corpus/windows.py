@@ -133,6 +133,132 @@ def moments_centered_on_milestones(rows: list[dict], span: int = 10) -> list[dic
     return out
 
 
+def moments_stratified_by_phase(rows: list[dict], k: int = 24, span: int = 10) -> list[dict]:
+    """K moments allocated ACROSS PHASES, not across the clock.
+
+    `moments()` spreads evenly over the stream, which means recon + rce +
+    dropper (91.3% of actions) take almost every slot and the phases the paper
+    is actually about - exfil at 56 actions, supply_chain at 69, evasion at 6 -
+    may not appear at all. `moments_centered_on_milestones()` has the mirror
+    problem: milestones exist in only 4 phases (k8s, rce, supply_chain,
+    tailscale), so exfil, c2, evasion, recon and dropper are structurally
+    unreachable no matter how many moments you take. This sampler fixes both
+    by giving every phase a floor.
+
+    Allocation: an even base quota per phase, with the remainder going to the
+    phases carrying the most milestones (ties broken by volume). At k=24 over
+    10 phases that is 2 each, +1 for k8s, rce, supply_chain, tailscale.
+
+    Within a phase, roughly half the quota is anchored ON a milestone (capped
+    by how many that phase actually has) and the rest on ordinary actions,
+    spread evenly through the phase's timeline. Keeping non-milestone moments
+    is a validity requirement, not padding: if every moment contained a
+    milestone, a model that always escalates would score perfectly - the same
+    reasoning `moments()` documents.
+
+    An anchor is a row of that phase; the moment is the `span` consecutive
+    actions of the GLOBAL stream centred on it, so a moment is a realistic
+    mixed slice (an exfil action surrounded by recon/dropper noise), not a
+    filtered single-phase view.
+    """
+    ordered = sorted(rows, key=lambda r: r["t_utc"])
+    if len(ordered) < span:
+        raise ValueError(f"need >= {span} rows, got {len(ordered)}")
+
+    positions: dict[str, list[int]] = {}
+    milestone_positions: dict[str, list[int]] = {}
+    for i, r in enumerate(ordered):
+        positions.setdefault(r["phase"], []).append(i)
+        if r["is_milestone"]:
+            milestone_positions.setdefault(r["phase"], []).append(i)
+
+    phases = sorted(positions)
+    base, rem = divmod(k, len(phases))
+    ranked = sorted(
+        phases,
+        key=lambda p: (-len(milestone_positions.get(p, [])), -len(positions[p]), p),
+    )
+    quota = {p: base + (1 if p in ranked[:rem] else 0) for p in phases}
+
+    def _spread(pool: list[int], n: int) -> list[int]:
+        """n items spread evenly through pool, endpoints included."""
+        if n <= 0 or not pool:
+            return []
+        if n >= len(pool):
+            return list(pool)
+        return [pool[round(i * (len(pool) - 1) / max(n - 1, 1))] for i in range(n)]
+
+    half = span // 2
+
+    def _start_for(pos: int) -> int:
+        return max(0, min(pos - half, len(ordered) - span))
+
+    # Two anchors can map to the SAME slice - most often at the stream edges,
+    # where every phase's first action clamps to start 0. Dropping the
+    # collision would silently return fewer than k moments, so instead each
+    # phase takes candidates in spread order and falls through to the next one
+    # until it finds an unclaimed slice. Phases are served scarcest-first
+    # (evasion has 6 actions and little room to move; recon has 6,191), so a
+    # bulk phase cannot take the only slice a rare phase could have used.
+    seen_starts: set[int] = set()
+    anchors: list[tuple[str, int, bool]] = []
+
+    def _claim(pool: list[int], want: int, phase: str, is_ms: bool) -> int:
+        """Claim up to `want` distinct slices from pool, preferring an even
+        spread but falling through on collision. Returns how many it got."""
+        if want <= 0 or not pool:
+            return 0
+        # candidates: the even spread first, then everything else in order, so
+        # the shape is still spread-out but a collision has somewhere to go
+        preferred = _spread(pool, min(want * 4, len(pool)))
+        candidates = preferred + [i for i in pool if i not in set(preferred)]
+        got = 0
+        for pos in candidates:
+            if got == want:
+                break
+            start = _start_for(pos)
+            if start in seen_starts:
+                continue
+            seen_starts.add(start)
+            anchors.append((phase, pos, is_ms))
+            got += 1
+        return got
+
+    for p in sorted(phases, key=lambda p: len(positions[p])):
+        q = quota[p]
+        ms_pool = milestone_positions.get(p, [])
+        n_ms = min(q - q // 2, len(ms_pool))          # ~half the quota, capped by availability
+        got_ms = _claim(ms_pool, n_ms, p, True)
+        claimed = {pos for ph, pos, _ in anchors if ph == p}
+        plain_pool = [i for i in positions[p] if i not in claimed]
+        _claim(plain_pool, q - got_ms, p, False)
+
+    out: list[dict] = []
+    for phase, pos, anchored_on_milestone in sorted(anchors, key=lambda a: a[1]):
+        start = _start_for(pos)
+        group = ordered[start:start + span]
+        anchor = ordered[pos]
+        out.append({
+            "moment_idx": len(out) + 1,
+            "anchor_phase": phase,
+            "anchor_action_idx": anchor["action_idx"],
+            "anchor_is_milestone": anchored_on_milestone,
+            "t_start": group[0]["t_utc"],
+            "t_end": group[-1]["t_utc"],
+            "evidence": render_for_model(group),
+            "_gt": {
+                "contains_milestone": any(r["is_milestone"] for r in group),
+                "milestone_names": [r["milestone_name"] for r in group if r["is_milestone"]],
+                "tactics": sorted({r["mitre_tactic"] for r in group if r.get("mitre_tactic")}),
+                "phases": sorted({r["phase"] for r in group}),
+                "max_severity": _max_sev(group),
+                "action_idx_range": [group[0]["action_idx"], group[-1]["action_idx"]],
+                "is_escalation_point": anchor.get("mitre_tactic") in {"Credential Access", "Privilege Escalation"},
+            },
+        })
+    return out
+
+
 def render_evidence_block(actions: list[dict]) -> str:
     """The identical evidence text both E3 frames wrap. Fixed-width columns
     so the two prompts differ ONLY in the role sentence and the ask."""
