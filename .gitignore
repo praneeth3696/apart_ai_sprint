@@ -9,3 +9,11 @@ runs/
 harness/measured_limits.json
 corpus/prototype_*.jsonl
 !corpus/prototype_k8s.jsonl
+
+# Blind separability check answer key (SPRINT_PLAN.md Fri+2h). Deliberately
+# NOT committed while the check is open: a key in the repo is a key anyone -
+# or any coding assistant - can read, and reading it voids the measurement.
+# A keeps it locally and scores with `blind_check.py --score`. It may be
+# committed alongside the result once B has submitted answers.
+analysis/blind_check_key.DO_NOT_OPEN.json
+analysis/blind_check_key.json
