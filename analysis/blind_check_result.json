@@ -1,0 +1,307 @@
+{
+  "n_windows": 20,
+  "n_correct": 14,
+  "accuracy": 0.7,
+  "accuracy_ci95_wilson": [
+    0.4810232237710206,
+    0.854524726031006
+  ],
+  "chance_level": 0.5,
+  "p_value_vs_chance_one_sided": 0.057659149169921875,
+  "threshold": 0.9,
+  "verdict": "PASS - benign stream not trivially separable",
+  "control_usable": true,
+  "attack_recall": 0.7,
+  "benign_recall": 0.7,
+  "confusion": {
+    "attack": {
+      "attack": 7,
+      "benign": 3
+    },
+    "benign": {
+      "attack": 3,
+      "benign": 7
+    }
+  },
+  "per_window": [
+    {
+      "anon_id": 1,
+      "true_label": "attack",
+      "b_label": "attack",
+      "correct": true
+    },
+    {
+      "anon_id": 2,
+      "true_label": "attack",
+      "b_label": "attack",
+      "correct": true
+    },
+    {
+      "anon_id": 3,
+      "true_label": "attack",
+      "b_label": "benign",
+      "correct": false
+    },
+    {
+      "anon_id": 4,
+      "true_label": "attack",
+      "b_label": "attack",
+      "correct": true
+    },
+    {
+      "anon_id": 5,
+      "true_label": "attack",
+      "b_label": "attack",
+      "correct": true
+    },
+    {
+      "anon_id": 6,
+      "true_label": "attack",
+      "b_label": "attack",
+      "correct": true
+    },
+    {
+      "anon_id": 7,
+      "true_label": "benign",
+      "b_label": "benign",
+      "correct": true
+    },
+    {
+      "anon_id": 8,
+      "true_label": "attack",
+      "b_label": "benign",
+      "correct": false
+    },
+    {
+      "anon_id": 9,
+      "true_label": "benign",
+      "b_label": "attack",
+      "correct": false
+    },
+    {
+      "anon_id": 10,
+      "true_label": "benign",
+      "b_label": "attack",
+      "correct": false
+    },
+    {
+      "anon_id": 11,
+      "true_label": "attack",
+      "b_label": "attack",
+      "correct": true
+    },
+    {
+      "anon_id": 12,
+      "true_label": "benign",
+      "b_label": "benign",
+      "correct": true
+    },
+    {
+      "anon_id": 13,
+      "true_label": "benign",
+      "b_label": "benign",
+      "correct": true
+    },
+    {
+      "anon_id": 14,
+      "true_label": "attack",
+      "b_label": "benign",
+      "correct": false
+    },
+    {
+      "anon_id": 15,
+      "true_label": "attack",
+      "b_label": "attack",
+      "correct": true
+    },
+    {
+      "anon_id": 16,
+      "true_label": "benign",
+      "b_label": "benign",
+      "correct": true
+    },
+    {
+      "anon_id": 17,
+      "true_label": "benign",
+      "b_label": "attack",
+      "correct": false
+    },
+    {
+      "anon_id": 18,
+      "true_label": "benign",
+      "b_label": "benign",
+      "correct": true
+    },
+    {
+      "anon_id": 19,
+      "true_label": "benign",
+      "b_label": "benign",
+      "correct": true
+    },
+    {
+      "anon_id": 20,
+      "true_label": "benign",
+      "b_label": "benign",
+      "correct": true
+    }
+  ],
+  "caveat": "n=20 is the sprint-plan sample size, not a powered experiment: the 95% CI spans roughly +/-20 points, so this check reliably catches TRIVIAL separability (the >90% case it is designed for) and cannot resolve, say, 55% from 70%. Report it as the screen it is.",
+  "sampling": {
+    "seed": 20260911,
+    "n_per_stream": 10,
+    "attack_windows": "non-milestone only - see module docstring"
+  },
+  "leak_scan": [
+    {
+      "token": "schema_version",
+      "predicts": "benign",
+      "n_windows": 4,
+      "windows": [
+        7,
+        12,
+        13,
+        20
+      ]
+    },
+    {
+      "token": "readyz",
+      "predicts": "attack",
+      "n_windows": 3,
+      "windows": [
+        1,
+        4,
+        14
+      ]
+    },
+    {
+      "token": "api/models",
+      "predicts": "attack",
+      "n_windows": 3,
+      "windows": [
+        1,
+        4,
+        14
+      ]
+    },
+    {
+      "token": "search",
+      "predicts": "attack",
+      "n_windows": 3,
+      "windows": [
+        1,
+        4,
+        14
+      ]
+    },
+    {
+      "token": "downloads",
+      "predicts": "attack",
+      "n_windows": 3,
+      "windows": [
+        1,
+        4,
+        14
+      ]
+    },
+    {
+      "token": "hf_",
+      "predicts": "attack",
+      "n_windows": 3,
+      "windows": [
+        4,
+        11,
+        15
+      ]
+    },
+    {
+      "token": "test",
+      "predicts": "benign",
+      "n_windows": 3,
+      "windows": [
+        10,
+        19,
+        20
+      ]
+    },
+    {
+      "token": "run-parts",
+      "predicts": "benign",
+      "n_windows": 3,
+      "windows": [
+        12,
+        19,
+        20
+      ]
+    },
+    {
+      "token": "cron",
+      "predicts": "benign",
+      "n_windows": 3,
+      "windows": [
+        12,
+        19,
+        20
+      ]
+    },
+    {
+      "token": "etc/cron.hourly",
+      "predicts": "benign",
+      "n_windows": 3,
+      "windows": [
+        12,
+        19,
+        20
+      ]
+    }
+  ],
+  "labeller": {
+    "who": "Claude (LLM), prompted by Person B (Praneeth)",
+    "not_unaided_human_judgement": true,
+    "disclosed_by_B": true,
+    "inputs_read": "analysis/blind_check_unlabelled.md only; no key, no streams, no sampler, no templates",
+    "caveat": "The pre-registered design says 'B labels them'. These labels are an LLM's, disclosed by B unprompted. An LLM is arguably a STRONGER adversary than a human skimming (systematic, tireless) and arguably weaker (no ops intuition). Report the labeller explicitly in the paper; do not present this as a human blind check."
+  },
+  "stratified_by_B_self_report": {
+    "note": "B declared in advance which windows were decided by a real signal vs a guess. Scored after the fact.",
+    "signal_windows": {
+      "ids": [
+        4,
+        7,
+        11,
+        12,
+        13,
+        15,
+        20
+      ],
+      "correct": 7,
+      "n": 7,
+      "accuracy": 1.0,
+      "p_vs_chance": 0.0078125
+    },
+    "guess_windows": {
+      "correct": 7,
+      "n": 13,
+      "accuracy": 0.5384615384615384,
+      "p_vs_chance": 0.5
+    },
+    "finding": "All accuracy is carried by the windows B flagged as having a real tell (7/7, p=0.008). The other 13 are at chance (7/13, p=0.500). The 70% headline is one template pair, not broad separability."
+  },
+  "template_audit": {
+    "method": "diffed every PHASE_TEMPLATES entry's event against its benign_twin",
+    "templates_with_substance_differing_twin": "12/96 (12.5%)",
+    "pairs": [
+      "recon: grep -e 'hf_' vs -e 'schema_version'",
+      "dropper+c2: cmd.json vs job.json",
+      "k8s: -A cluster-wide vs -n single namespace (x3)",
+      "exfil: {ext} drop host vs {host} (x2)",
+      "c2: /b/ vs /hook/, /ack/ vs /ping/",
+      "evasion: shred -u vs rm -f",
+      "tailscale: tailscale0 vs eth0"
+    ],
+    "row_exposure": "~5.8% of rows in each stream carry a perfectly-separating literal",
+    "window_exposure": "~50% of 5-minute windows contain at least one such literal",
+    "lexical_ceiling": "A labeller using ONLY these literals scores 100% on the ~50% of windows it can decide and must guess on the rest -> expected ~75% overall. That is the ceiling for a perfect per-line lexical adversary, and it is BELOW the 90% threshold. On this sample that rule got 14/14 decided correct, 6 undecidable.",
+    "interpretation": "The control survives an optimal lexical attack, which is the claim that matters. But the tells are perfect where present, so surface separability is ~75%, not ~50%. Report that number rather than implying the streams are indistinguishable.",
+    "recommendation": "Most differing twins encode REAL behavioural differences (attacker breadth, third-party drop hosts, shred vs rm) and templates.py RULE 3 keeps them deliberately - removing them would model the problem away. The exception is cmd.json vs job.json, which is a pure naming artifact with no behavioural content and is a free tell across dropper+c2. Neutralising just that one is the cheap win. Not changed here: it would require regenerating both streams and would move every downstream number (escalation #10498, E0 baselines)."
+  }
+}

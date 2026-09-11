@@ -9,3 +9,7 @@ runs/
 harness/measured_limits.json
 corpus/prototype_*.jsonl
 !corpus/prototype_k8s.jsonl
+
+# Blind separability check answer key: withheld while the check was OPEN, then
+# committed alongside blind_check_result.json once B submitted (2026-09-11), so
+# the score is auditable. Re-ignore it if a new check is ever opened.
