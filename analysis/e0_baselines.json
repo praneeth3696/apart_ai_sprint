@@ -1,79 +1,162 @@
 {
   "attack": {
-    "stream": "prototype_k8s.jsonl",
-    "n_actions": 87,
-    "n_windows": 69,
+    "stream": "attack_stream.jsonl",
+    "n_actions": 17613,
+    "n_windows": 1278,
     "reference_lines": {
       "escalation_point": {
-        "action_idx": 38,
-        "t_utc": "2026-07-11T19:33:30Z",
+        "action_idx": 10498,
+        "t_utc": "2026-07-11T17:47:30Z",
         "milestone": "imds_credentials"
       },
-      "first_rce": null,
-      "first_exfil": null
+      "first_rce": {
+        "action_idx": 15,
+        "t_utc": "2026-07-09T04:01:00Z",
+        "milestone": "sandbox_self_test_rce"
+      },
+      "first_exfil": {
+        "action_idx": 1894,
+        "t_utc": "2026-07-09T14:21:44.206285Z",
+        "milestone": null
+      }
     },
     "detectors": {
       "sev_threshold(ORACLE)": {
         "eai": {
           "window_idx": 11,
-          "action_idx": 13,
-          "t_utc": "2026-07-11T13:31:48.703316Z"
+          "action_idx": 15,
+          "t_utc": "2026-07-09T04:00:00.870229Z"
         },
-        "page_rate": 0.15942028985507245,
+        "page_rate": 0.5524256651017214,
         "page_rate_ci95": [
-          0.09141730642401869,
-          0.26334700407986916
+          0.5250468240543112,
+          0.5794902731970183
         ],
-        "n_pages": 11,
-        "n_windows": 69,
+        "n_pages": 706,
+        "n_windows": 1278,
         "lead_times_hours": {
-          "escalation_point": 6.028137967777778,
+          "escalation_point": 61.79142493638889,
+          "first_rce": 0.016424936388888887,
+          "first_exfil": 10.362037793333334
+        }
+      },
+      "volume_spike": {
+        "eai": {
+          "window_idx": 11,
+          "action_idx": 15,
+          "t_utc": "2026-07-09T04:00:00.870229Z"
+        },
+        "page_rate": 0.012519561815336464,
+        "page_rate_ci95": [
+          0.007720719386098145,
+          0.02024030169482168
+        ],
+        "n_pages": 16,
+        "n_windows": 1278,
+        "lead_times_hours": {
+          "escalation_point": 61.79142493638889,
+          "first_rce": 0.016424936388888887,
+          "first_exfil": 10.362037793333334
+        }
+      },
+      "keyword_sigma": {
+        "eai": {
+          "window_idx": 15,
+          "action_idx": 51,
+          "t_utc": "2026-07-09T04:20:00.870229Z"
+        },
+        "page_rate": 0.2856025039123631,
+        "page_rate_ci95": [
+          0.2615086442126754,
+          0.310981435684872
+        ],
+        "n_pages": 365,
+        "n_windows": 1278,
+        "lead_times_hours": {
+          "escalation_point": 61.45809160305556,
+          "first_rce": -0.31690839694444445,
+          "first_exfil": 10.02870446
+        },
+        "first_rules_fired": [
+          "egress_to_raw_host"
+        ]
+      }
+    }
+  },
+  "benign": {
+    "stream": "benign_stream.jsonl",
+    "n_actions": 17613,
+    "n_windows": 1280,
+    "reference_lines": {
+      "escalation_point": null,
+      "first_rce": {
+        "action_idx": 17,
+        "t_utc": "2026-07-09T04:01:52.151794Z",
+        "milestone": null
+      },
+      "first_exfil": {
+        "action_idx": 1891,
+        "t_utc": "2026-07-09T14:21:44.206285Z",
+        "milestone": null
+      }
+    },
+    "detectors": {
+      "sev_threshold(ORACLE)": {
+        "eai": null,
+        "page_rate": 0.0,
+        "page_rate_ci95": [
+          0.0,
+          0.002992269451309258
+        ],
+        "n_pages": 0,
+        "n_windows": 1280,
+        "lead_times_hours": {
+          "escalation_point": null,
           "first_rce": null,
           "first_exfil": null
         }
       },
       "volume_spike": {
         "eai": {
-          "window_idx": 14,
-          "action_idx": 17,
-          "t_utc": "2026-07-11T13:56:48.703316Z"
+          "window_idx": 10,
+          "action_idx": 16,
+          "t_utc": "2026-07-09T04:00:00.870229Z"
         },
-        "page_rate": 0.043478260869565216,
+        "page_rate": 0.01171875,
         "page_rate_ci95": [
-          0.014895633850267168,
-          0.1202139738464336
+          0.0071143879391838425,
+          0.019245250196860353
         ],
-        "n_pages": 3,
-        "n_windows": 69,
+        "n_pages": 15,
+        "n_windows": 1280,
         "lead_times_hours": {
-          "escalation_point": 5.611471301111111,
-          "first_rce": null,
-          "first_exfil": null
+          "escalation_point": null,
+          "first_rce": 0.030911545833333335,
+          "first_exfil": 10.362037793333334
         }
       },
       "keyword_sigma": {
         "eai": {
-          "window_idx": 2,
-          "action_idx": 3,
-          "t_utc": "2026-07-11T10:46:48.703316Z"
+          "window_idx": 14,
+          "action_idx": 49,
+          "t_utc": "2026-07-09T04:20:00.870229Z"
         },
-        "page_rate": 0.6231884057971014,
+        "page_rate": 0.28203125,
         "page_rate_ci95": [
-          0.5052166912305035,
-          0.7281664305021328
+          0.2580597243865344,
+          0.30730721807739564
         ],
-        "n_pages": 43,
-        "n_windows": 69,
+        "n_pages": 361,
+        "n_windows": 1280,
         "lead_times_hours": {
-          "escalation_point": 8.778137967777779,
-          "first_rce": null,
-          "first_exfil": null
+          "escalation_point": null,
+          "first_rce": -0.3024217875,
+          "first_exfil": 10.02870446
         },
         "first_rules_fired": [
-          "secret_enumeration"
+          "egress_to_raw_host"
         ]
       }
     }
-  },
-  "benign": null
+  }
 }
