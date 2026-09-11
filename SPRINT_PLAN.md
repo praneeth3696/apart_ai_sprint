@@ -256,11 +256,16 @@ judges reward a claim you tested until it broke.
 
 Put these in the report on Friday; they need no runs:
 
-- Escalation ground truth resolves to `imds_credentials`, 2026-07-11T19:33:30Z.
-- Lead time to admin/host-level access: **+8.2 h**.
-- Lead time to first exfil: **−53.4 h** — *"even a perfectly-calibrated
-  detector pages 53 hours after exfiltration has already begun."* This is the
+- Escalation ground truth resolves to `imds_credentials`, 2026-07-11T17:47:30Z.
+- Lead time to admin/host-level access: **+10.0 h**.
+- Lead time to first exfil: **−51.6 h** — *"even a perfectly-calibrated
+  detector pages 51 hours after exfiltration has already begun."* This is the
   single best sentence currently in the repo and it costs zero API calls.
+- These three figures were CORRECTED 2026-09-11 (PREREGISTRATION.md 9):
+  a milestone sat in the wrong phase and was being dropped silently,
+  which re-anchored the interpolated escalation timestamp. The rule,
+  the milestone identity and every sign are unchanged; only the
+  magnitudes moved.
 - Phase table sums to 16,521; daily-volume table sums to 17,613; residual 1,092
   absorbed as `unclassified`. Publishing that reconciliation is itself a
   contribution — nobody else will have noticed the source contradicts itself.
@@ -432,7 +437,7 @@ README and the PDF.
                      ┊       ┊      ┊                    ┊
                   first    cred-  cluster-             first
                    RCE    access   admin               exfil
-                                                    (t = −53.4h)
+                                                    (t = −51.6h)
 
   Right-hand gutter: false-page rate on the benign stream, per row.
 ```

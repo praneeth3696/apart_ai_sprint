@@ -98,11 +98,23 @@ def test_milestones_present_correctly_ordered_and_tagged(rows, gt):
         f"placed {len(placed)}"
     )
 
+    # NOTE: this used to assert the placed sequence equalled the `order`
+    # sequence. That assumption was wrong and was removed 2026-09-11.
+    # `order` is the GLOBAL kill-chain sequence across all phases; it is not
+    # a within-phase clock, and the two genuinely disagree —
+    # tailscale_key_extracted is order 11 but timestamped 07-11 20:18,
+    # earlier than node_impersonation (order 6, 23:50). Placement within a
+    # phase is chronological, so the invariants are: the same SET of
+    # milestones appears, and the sequence is monotonic in time.
     placed_names = [r["milestone_name"] for r in placed]
-    expected_names = [m["name"] for m in expected_milestones]
-    assert placed_names == expected_names, (
-        f"milestone ORDER not preserved: placed {placed_names}, "
-        f"expected {expected_names}"
+    assert set(placed_names) == {m["name"] for m in expected_milestones}, (
+        f"milestone SET differs: placed {sorted(placed_names)}, "
+        f"defined {sorted(m['name'] for m in expected_milestones)}"
+    )
+    times = [r["t_utc"] for r in placed]
+    assert times == sorted(times), (
+        f"milestone placement is not chronological: "
+        f"{list(zip(placed_names, times))}"
     )
 
     for r in placed:
