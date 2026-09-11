@@ -145,10 +145,16 @@ phases:
 
   - name: unclassified
     actions: 1092
-    first_seen: null
+    first_seen: null   # not a kill-chain phase; falls back to campaign_window
     last_seen: null
     days_eligible: ["07-09", "07-10", "07-11", "07-12", "07-13"]
     default_severity: info
+    # STRUCTURED, because the generator has to read it. Until now the claim
+    # "gt_malicious=false by default" lived only in the prose of `source`
+    # below, while generate_phase.py hardcoded gt_malicious=True for every
+    # row - so these 1,092 rows would have been labelled malicious in the
+    # attack stream, contradicting the reconciliation that created them.
+    gt_malicious: false
     source: >
       Inferred, not itemized in source. See phase_total_reconciliation:
       the daily-volume table sums to 17,613 while the 9 named phases sum
@@ -428,7 +434,24 @@ milestones:
 
   - name: tailscale_key_extracted
     telemetry: "kubectl get secret tailscale-auth -n kube-system -o jsonpath={.data.TS_AUTHKEY} | base64 -d"
-    phase: tailscale
+    # PHASE CORRECTED 2026-09-11: was `tailscale`, which is impossible.
+    # This milestone's t_utc (20:18) precedes the tailscale phase's own
+    # published first_seen (21:23) by 65 minutes, so it can never fall
+    # inside an allocated tailscale day and the generator dropped it
+    # silently - 11 milestones placed where 12 are defined.
+    #
+    # `k8s` is also the correct phase on the source's own wording: the
+    # action is "Corporate VPN auth key extracted from Hugging Face
+    # KUBERNETES SECRETS" - a k8s secret read, whose telemetry line is a
+    # `kubectl get secret`. What belongs to the tailscale phase is the
+    # key's USE (tailscale_sandbox_enrolled), not its theft. The k8s
+    # window (07-11 10:10 .. 07-12 13:32) contains 20:18 comfortably.
+    #
+    # Escalation ground truth is unaffected: this is Credential Access at
+    # 20:18, still later than imds_credentials at 19:33:30, so the
+    # pre-registered page point does not move. Verified after the change,
+    # not assumed.
+    phase: k8s
     order: 11
     t_utc: "2026-07-11T20:18:00Z"
     note: >

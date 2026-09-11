@@ -45,6 +45,37 @@ def _day_bounds(date_str: str, phase_first: datetime, phase_last: datetime) -> t
     return max(day_start, phase_first), min(day_end, phase_last)
 
 
+def _phase_sequence(milestones: list[dict], phase_first: datetime) -> list[dict]:
+    """Order a phase's milestones for PLACEMENT, which is chronological.
+
+    `order` is the GLOBAL kill-chain sequence across all phases. It is not a
+    within-phase clock, and the two can disagree: tailscale_key_extracted is
+    order 11 but timestamped 07-11 20:18, earlier than node_impersonation
+    (order 6, 23:50). Sorting by `order` and assuming it was chronological
+    made the interpolator require its cursor to move backwards, which the
+    not_after assertion reported as "upper bound leaves no room after ...".
+    The assertion was right; the sort was wrong.
+
+    A milestone with no t_utc has no clock position of its own, so it
+    inherits one just after the latest order-predecessor that does have a
+    timestamp. That keeps the documented chain relationship intact while
+    guaranteeing the sequence handed to the interpolator is monotonic.
+    `order` itself is never rewritten - it is the published chain sequence
+    and CITATIONS.md refers to it.
+    """
+    by_order = sorted(milestones, key=lambda m: m["order"])
+    provisional: list[tuple[datetime, int, dict]] = []
+    last_known = phase_first
+    for rank, m in enumerate(by_order):
+        if m.get("t_utc"):
+            last_known = _parse(m["t_utc"])
+        provisional.append((last_known, rank, m))
+    # (inherited time, order rank) - rank breaks ties so an unknown always
+    # follows the known milestone it inherited from, never precedes it.
+    provisional.sort(key=lambda x: (x[0], x[1]))
+    return [m for _, _, m in provisional]
+
+
 def _fill_missing_milestone_times(milestones: list[dict], phase_first: datetime, phase_last: datetime) -> list[dict]:
     """Milestones with t_utc: null still have a fixed `order`. Interpolate a
     timestamp between their known neighbors so ORDER is preserved even
@@ -116,14 +147,22 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
     phases, days, matrix = allocate()
 
     phase_cfg = next(p for p in gt["phases"] if p["name"] == phase_name)
-    phase_first = _parse(phase_cfg["first_seen"])
-    phase_last = _parse(phase_cfg["last_seen"])
+    # `unclassified` is not a kill-chain phase and has no published first/last
+    # seen - it is the residual absorbing the 1,092-action gap between the two
+    # published tables. Fall back to the campaign window rather than crashing
+    # in _parse(None).
+    phase_first = _parse(phase_cfg["first_seen"] or gt["campaign_window"]["start_utc"])
+    phase_last = _parse(phase_cfg["last_seen"] or gt["campaign_window"]["end_utc"])
+    # Malicious by default; `unclassified` sets it false in ground_truth.yaml.
+    # Read it, never assume it - these 1,092 rows are 6.2% of the corpus and
+    # mislabelling them would corrupt every gt_malicious-derived number.
+    phase_malicious = phase_cfg.get("gt_malicious", True)
     phase_idx = phases.index(phase_name)
     day_counts = dict(zip(days, matrix[phase_idx].tolist()))
 
-    milestones = sorted(
-        (m for m in gt["milestones"] if m["phase"] == phase_name),
-        key=lambda m: m["order"],
+    milestones = _phase_sequence(
+        [m for m in gt["milestones"] if m["phase"] == phase_name],
+        phase_first,
     )
     milestones = _fill_missing_milestone_times(milestones, phase_first, phase_last)
 
@@ -176,7 +215,7 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
                 "mitre_technique": m.get("mitre_technique"),
                 "mitre_tactic": m.get("mitre_tactic"),
                 "mitre_confidence": m.get("mitre_confidence", "unmapped"),
-                "gt_malicious": True,
+                "gt_malicious": phase_malicious,
                 "gt_severity": phase_cfg["default_severity"],
                 "citation": f"ground_truth.yaml#milestones[{m['name']}]",
                 "is_milestone": True,
@@ -200,12 +239,34 @@ def generate_phase(phase_name: str = "k8s") -> list[dict]:
                 "mitre_technique": tpl["mitre_technique"],
                 "mitre_tactic": tpl["mitre_tactic"],
                 "mitre_confidence": "synthetic",
-                "gt_malicious": True,
+                "gt_malicious": phase_malicious,
                 "gt_severity": tpl.get("severity", phase_cfg["default_severity"]),
                 "citation": "synthetic filler - template bank, not sourced (scaffold per PLAN.md)",
                 "is_milestone": False,
                 "t_utc_estimated": False,
             })
+
+    # Every milestone defined for this phase MUST end up in the stream. The
+    # day loop only sees milestones whose t_utc falls inside some allocated
+    # day, so one sitting outside the phase's own published window lands in
+    # no day at all and is silently dropped - no error, no warning, just 11
+    # milestones where ground_truth.yaml defines 12. That is exactly what
+    # happened to tailscale_key_extracted (t_utc 07-11 20:18, tailscale
+    # window opens 21:23), and it went unnoticed until the phases were merged
+    # and counted. Fail loudly instead.
+    placed = {r["milestone_name"] for r in rows if r["is_milestone"]}
+    unplaced = [m for m in milestones if m["name"] not in placed]
+    assert not unplaced, (
+        f"{phase_name}: {len(unplaced)} milestone(s) defined but not placed - "
+        + "; ".join(
+            f"{m['name']} at {m['t_utc']} is outside the phase window "
+            f"{_fmt(phase_first)}..{_fmt(phase_last)}"
+            for m in unplaced
+        )
+        + ". Either the milestone belongs to a different phase, or its t_utc "
+          "contradicts the published phase window. Do not widen the window - "
+          "it is a published figure."
+    )
 
     rows.sort(key=lambda r: r["t_utc"])
     for i, r in enumerate(rows, start=1):

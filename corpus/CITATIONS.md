@@ -124,8 +124,15 @@ Declared so a reviewer never has to discover them.
 
 ## 7. Coverage honesty
 
-Milestones by phase: k8s 5, rce 3, tailscale 2, supply_chain 2, **recon 0,
+Milestones by phase: k8s 6, rce 3, supply_chain 2, tailscale 1, **recon 0,
 dropper 0, exfil 0, c2 0, evasion 0**.
+
+> `tailscale_key_extracted` (order 11) counts under **k8s**, not `tailscale`.
+> Its sourced timestamp, 07-11 20:18, precedes the tailscale phase's published
+> `first_seen` of 21:23 by 65 minutes, so it cannot sit in that phase at all —
+> and the source describes it as a read of *Kubernetes secrets*. What belongs
+> to the tailscale phase is the key's later **use** (`tailscale_sandbox_enrolled`),
+> not its theft. See PREREGISTRATION.md §9, 2026-09-11.
 
 **recon + dropper = 13,163 actions = 75% of the corpus, with zero sourced
 milestones.** Those rows obey published marginals and nothing else. Stated in
