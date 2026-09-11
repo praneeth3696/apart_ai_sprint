@@ -47,10 +47,21 @@ prompting.
 **Single-run, text-only, English-only.** No multi-turn drift, no tool use, no
 agentic scaffolds. Temperature 0, `n=3` on P0 experiments only.
 
-**Provider-mediated.** All calls go through OpenRouter. Our
-platform-filter finding held across three provider routes (auto, Anthropic
-direct, Amazon Bedrock), but **we did not test Anthropic's first-party API**,
-and we do not claim to have.
+**Provider-mediated, and the attribution is open.** All calls go through
+OpenRouter. The filter finding held across three of that aggregator's provider
+routes (auto, Anthropic direct, Amazon Bedrock) — but **route-invariance is the
+signature of an aggregator-side filter, not evidence against one.** If a
+moderation layer sits in OpenRouter's own stack ahead of every route it offers,
+all three block identically, which is exactly what we saw. We did not test
+Anthropic's first-party API, so **we do not know which layer imposes the
+block, and we do not attribute it.** We report the measurement: requests to
+these models, on this route, are blocked before generation. See
+`PREREGISTRATION.md` §3a and its 2026-09-10 amendment.
+
+**A model is not a model; it is a model as served by someone.** Serving stacks
+differ in quantisation, default sampling, system-prompt injection and
+moderation. Every table reports the provider alongside the model ID for that
+reason.
 
 **Production endpoints change without notice.** Model IDs and UTC timestamps
 are logged for every call; results are a snapshot of 2026-09.
@@ -66,9 +77,9 @@ these. Conflating them would attribute to model judgment something no model
 judged — and would have inflated our own headline.
 
 **The safety-classifier contrast is one instrument, not a consensus.** We
-report that `nemotron-3.5-content-safety` rates 10/10 of the prompts
-Anthropic's filter blocked as safe, and we calibrate it first so the verdict
-is interpretable. But `llama-guard-4-12b` and `gpt-oss-safeguard-20b` were
+report that `nemotron-3.5-content-safety` rates 10/10 of the prompts blocked
+on the Claude route as safe, and we calibrate it first so the verdict is
+interpretable. But `llama-guard-4-12b` and `gpt-oss-safeguard-20b` were
 unaffordable, so we could not check whether other classifiers agree. Two
 safety systems disagreeing tells you they have different policies; it does not
 tell you which is correctly calibrated for this content, and we do not claim it
@@ -123,14 +134,24 @@ The attacker-framed prompt arm (E2's twin) is P2 and derives strictly from
 already-public material; it never requests working exploit code. If provider
 ToS concerns arise it is dropped without touching the headline.
 
-**A finding with disclosure weight.** §3a of the pre-registration reports that
-Anthropic's platform filter blocks defensive SOC triage prompts over a
-Kubernetes audit log — including a pure "should I page the on-call?" monitor
-frame. We report this as a measured, reproducible platform behaviour, with the
-caveat that it is observed through OpenRouter. We do not characterise it as
-intentional, and we note that over-blocking of defensive security work is a
-known and actively-researched failure mode (*Defensive Refusal Bias*,
-arXiv 2603.01246), not a novel accusation.
+**A finding with disclosure weight, stated at the width we can defend.** §3a
+of the pre-registration reports that requests to Claude models *via OpenRouter*
+are blocked before generation on defensive SOC triage prompts over a Kubernetes
+audit log — including a pure "should I page the on-call?" monitor frame. We
+report this as a measured, reproducible behaviour **of that access path**. We
+deliberately do not name which layer imposes it, because route-invariance does
+not distinguish an aggregator filter from a vendor one and we have not run the
+first-party test that would. We do not characterise it as intentional, and we
+note that over-blocking of defensive security work is a known and
+actively-researched failure mode (*Defensive Refusal Bias*, arXiv 2603.01246),
+not a novel accusation.
+
+Naming a company for a block we cannot localise would be the kind of error this
+appendix exists to prevent. The narrower claim is also the more useful one:
+aggregators are how small defenders and under-resourced CSIRTs actually reach
+frontier models, and a moderation layer the defender did not choose, cannot
+configure and cannot see is itself an instance of the verification gap this
+project is about.
 
 **Responsible release.** Corpus, generator, prompts, rubric, and raw cached
 responses are published so the numbers can be checked. API keys are gitignored

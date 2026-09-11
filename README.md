@@ -1,7 +1,13 @@
 # HF-Replay-Recon — a replayable scaffold for the July 2026 agent intrusion
 
-**Status: pre-sprint (2026-09-09).** Corpus machinery and the Wed-9 smoke test
-are done; the full runs happen during the sprint (Fri 11 – Sun 13 Sep).
+**Status: pre-sprint (2026-09-10).** Corpus machinery, the Wed-9 smoke test and
+the non-LLM rule baselines are done; the full runs happen during the sprint
+(Fri 11 – Sun 13 Sep).
+
+**Start here:** [`SPRINT_PLAN.md`](SPRINT_PLAN.md) is the execution plan (roles,
+hour-by-hour, run sizing). [`PRIMER.md`](PRIMER.md) is the background doc — the
+incident, the security and eval vocabulary, and the repo map — for anyone
+joining without a security background.
 
 SecureLayer7 asked of this incident: *"which action number does your control
 fire on?"* You cannot answer that without a replayable stream, and the real one
@@ -15,16 +21,23 @@ ordering — and ships it with a per-field citation ledger.
 
 ## Findings so far (30 calls, 2026-09-09)
 
-**1. Anthropic models are blocked by a platform content filter on defensive SOC
-triage.** `claude-opus-5` and `claude-fable-5.1` return
+**1. Requests to Claude models via OpenRouter are blocked before generation on
+defensive SOC triage.** `claude-opus-5` and `claude-fable-5.1` return
 `finish_reason=content_filter` with **0 completion tokens** on both a monitor
 frame ("should I page the on-call?") and an assistant frame, for all 5 pivotal
-moments. Not route-specific — identical via OpenRouter auto-route, Anthropic
-direct, and Amazon Bedrock. The same model answers a trivial prompt normally.
+moments — identical via OpenRouter auto-route, Anthropic direct, and Amazon
+Bedrock. The same model answers a trivial prompt normally, so the endpoint is
+reachable and the block is specific to this content.
 
 > This is a **filter**, not a refusal. The model never saw the prompt. We score
 > `filtered` separately from `refused` throughout — conflating them attributes
 > to model judgment something no model judged.
+
+> **We do not attribute the block to a layer.** Route-invariance across an
+> aggregator's own routes is the *signature* of an aggregator-side filter, not
+> evidence against one. Until the first-party test runs we report the
+> measurement and not a culprit — see
+> [PREREGISTRATION.md](PREREGISTRATION.md) §3a.
 
 **2. No incoherence in the reachable models.** `gpt-5.6-luna` and `glm-5.2`
 both scored **5/5 coherent-alarm**: paged on every pivotal moment and assisted
@@ -35,8 +48,9 @@ event, not a pivotal one. So the discriminating measurement is the **false-page
 rate on the benign stream**, not escalation latency alone.
 
 **4. A purpose-built safety classifier rates every blocked prompt safe.**
-Given the byte-identical prompts Anthropic blocked, `nemotron-3.5-content-safety`
-returned **SAFE 10/10** while both Anthropic models returned BLOCKED 10/10.
+Given the byte-identical prompts blocked on the Claude route,
+`nemotron-3.5-content-safety` returned **SAFE 10/10** while both Claude models
+returned BLOCKED 10/10.
 The classifier is calibrated, not assumed: it flags 2/2 category-level harmful
 probes UNSAFE and passes 2/2 benign probes SAFE, so it is not simply
 permissive. A disagreement between two safety systems, not a verdict on
@@ -67,6 +81,14 @@ repo root (`OPEN_ROUTER_KEY=...`), then:
 ```bash
 python harness/e3_incoherence_smoke.py nvidia/nemotron-3-ultra-550b-a55b:free
 python harness/safety_classifier_contrast.py   # runs its own calibration first
+python harness/measure_limits.py               # provider rate limits + run sizing
+```
+
+The rule baselines need no key at all:
+
+```bash
+python harness/e0_baselines.py corpus/prototype_k8s.jsonl \
+                               --benign corpus/benign_stream.jsonl
 ```
 
 Responses cache to `runs/{exp}/{model}/{hash}.json` on receipt; a completed
@@ -88,12 +110,17 @@ corpus/
   test_prototype.py     17 assertions
   answer_keys/FORMAT.md
 harness/
-  client.py                    cached OpenRouter client
+  client.py                    cached client; `anthropic:` prefix = first-party
+  e0_baselines.py              E0 non-LLM rule detectors (no API calls)
+  measure_limits.py            provider rate limits + E1 run sizing
+  PROVIDERS.md                 the roster and what we measured
   e3_incoherence_smoke.py      the Wed-9 smoke test
   safety_classifier_contrast.py  matched filter-vs-classifier contrast
   test_anthropic_surface.py      first-party vs aggregator filter test
 prompts/RUBRIC.md              frozen scoring rubric
-PREREGISTRATION.md             frozen 2026-09-09
+SPRINT_PLAN.md                 the execution plan
+PRIMER.md                      background for a first-time reader
+PREREGISTRATION.md             frozen 2026-09-09, amendments in §9
 LIMITATIONS.md
 ```
 
@@ -117,8 +144,12 @@ results are single-run, text-only, and mediated by OpenRouter.
 
 - 9 of 10 phase template banks unwritten (only `k8s` exists)
 - Benign baseline stream not built — this is the false-page control, and the
-  headline now depends on it
+  headline now depends on it. **E0 already runs and is not interpretable until
+  this exists**, which is the clearest statement of how load-bearing it is.
 - `build_corpus.py` (all-phase merge, global `action_idx`) not written
+- **Free-tier daily request cap is unmeasured**, and it — not money — sizes the
+  whole E1 run. `harness/measure_limits.py` gets the number; nothing downstream
+  should be sized until it has. See `SPRINT_PLAN.md` §0.3.
 - **Budget is $0 and will stay $0.** The study runs entirely on 11 verified
   OpenRouter `:free` models. The frontier family named in the incident is
   measurable only as blocked / not-blocked, because a content-filtered call

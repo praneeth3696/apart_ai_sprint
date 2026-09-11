@@ -1,6 +1,20 @@
 # TIMELINE — 2 people, 8 prep days + 3 sprint days
 
-**Today:** Thu 3 Sep 2026 · **Sprint:** Fri 11 Sep 18:00 → Sun 13 Sep (submission cutoff Sunday)
+> **Historical, and superseded for the sprint days.** This was written on Thu 3
+> Sep as the prep-week plan and it did its job — the pre-sprint column is what
+> actually happened and it is the basis of the disclosure in
+> `PREREGISTRATION.md` §1. For Fri 11 → Sun 13, follow `SPRINT_PLAN.md` §3
+> instead: it reflects the corrected track list, the added E0 experiment, the
+> measured-throughput run sizing, and the real deadline below. §5
+> (contingencies) still applies as written.
+
+**Written:** Thu 3 Sep 2026 · **Sprint:** Fri 11 Sep 18:00 → Sun 13 Sep
+
+**The real cutoff:** Sun 13 Sep **23:59 AoE**. AoE is UTC−12, so in IST that is
+**Mon 14 Sep, 17:29** — roughly 17 hours past "Sunday night". Plan to submit
+Sunday night IST anyway; resubmission under an identical title is explicitly
+allowed and replaces your files. Treat Monday as the buffer that absorbs one
+disaster, and do not spend it in advance.
 
 **A** = Harness & Runs · **B** = Corpus & Evidence
 

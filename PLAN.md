@@ -1,5 +1,12 @@
 # PLAN — how we execute
 
+> **Superseded in part, 2026-09-10.** `SPRINT_PLAN.md` now owns the schedule,
+> the role split and the run sizing (§1–§2 below). This document remains the
+> strategy: the priority stack, the corpus build spec, the experiment protocols
+> and the risk register. Where the two disagree on *when* or *how much*,
+> `SPRINT_PLAN.md` wins; where they disagree on *what an experiment is*, this
+> document and `PREREGISTRATION.md` win.
+
 Two people. Three days. One headline number. Everything below is ordered so that if we lose a day, we still ship a real result.
 
 ---
@@ -8,7 +15,7 @@ Two people. Three days. One headline number. Everything below is ordered so that
 
 | Tier | Item | Kill rule |
 |---|---|---|
-| **P0** | Corpus (reduced) · E3 Incoherence · E1 Escalation latency + false-page control | Never cut. These are the paper. |
+| **P0** | Corpus (reduced) · **E0 rule baselines** · E1 Escalation latency + false-page control · E3 Incoherence | Never cut. These are the paper. E0 costs zero API calls and is what makes E1's numbers interpretable — see `SPRINT_PLAN.md` §1.2. |
 | **P1** | E2 refusal × accuracy · E4 Effective Forensic Yield | Cut model count before cutting an experiment. |
 | **P2** | Attacker-mirror control · fabrication rate · Responder Mode spec · reasoning-trace read | Cut freely by Sunday 09:00. |
 | **CUT** | Refusal-direction extraction · abliteration · any interpretability | Do not start. Not on Sunday "if there's time". |
@@ -56,6 +63,16 @@ Reconstruction corpus + citation ledger, benign baseline stream, prompt taxonomy
   Studio, GitHub Models — free with the account this repo already uses, Groq,
   Cerebras, Mistral) could restore a frontier arm at $0. None verified yet; if
   one works it re-enters and PREREGISTRATION.md §8c is amended with a timestamp.
+- **Throughput is the binding constraint, and it is unmeasured.** 250 windows ×
+  2 streams × 11 models is **5,500 calls for E1 alone**, against a free tier
+  limited by requests-per-minute *and* by a daily cap that depends on lifetime
+  credit purchased. **Measure the cap before sizing anything**
+  (`harness/measure_limits.py`), then apply
+  `windows_per_stream = combined_RPD × 0.5 / (2 × n_models)`. If that yields
+  fewer than 40 windows per stream, **cut models, not windows** — a latency
+  curve needs resolution more than a wide roster. Sample stratified: every
+  milestone-carrying window, a random sample of the rest, and a size-matched
+  benign sample. See `SPRINT_PLAN.md` §0.3 and `harness/PROVIDERS.md`.
 - **Determinism:** temperature 0, fixed seeds where offered, `n=3` samples per prompt on P0 experiments only. Log model ID string and UTC timestamp for every single call.
 - **Token budget:** `max_tokens` must exceed `reasoning_tokens + expected content`.
   GLM-5.2 spent 524 reasoning tokens before its first content token; at a
@@ -97,6 +114,34 @@ Also record two softer reference lines for the plots: first RCE, and first exfil
 ---
 
 ## 4. Experiments — exact protocol
+
+### E0 · Rule baselines (added 2026-09-10, zero API calls)
+
+Three non-LLM detectors over the **same two streams, the same windowing, and
+the same escalation ground truth** as E1, so the numbers sit on one axis.
+
+| Detector | Rule | Sees |
+|---|---|---|
+| `sev_threshold` | pages when the window holds an action with `gt_severity ≥ high` | **Ground truth. An ORACLE, not a baseline** — the upper bound on what any detector could do if it already knew the answer. Never describe it as deployable. |
+| `volume_spike` | pages when window size ≥ k × rolling median of the previous 12 windows | Model-visible fields only |
+| `keyword_sigma` | ~15 portable regexes over the command text — IMDS address, `--as=system:`, `hostPath`, privileged pod, `kubectl exec`, token mint, tailscale, CSI enumeration | Model-visible fields only |
+
+**The fairness rule:** the two real baselines read exactly the projection a
+model reads (`generate_phase.MODEL_VISIBLE_FIELDS`). If they could see `phase`
+or `mitre_tactic` they would be reading the answer key and the comparison would
+be rigged in the rules' favour.
+
+**Report:** EAI, lead times, and page rate for each, with Wilson CIs, on both
+streams — plotted on the same axes as the models in the E1 chart.
+
+**Why it is P0 despite costing nothing.** *"Model X pages at window 12 with a
+6% false-page rate"* is not interpretable. *"A fifteen-line keyword rule pages
+40 windows earlier at a third the false-page rate"* is a finding — and so is
+the reverse. It also answers SecureLayer7's *"which action number does your
+control fire on?"* for a control that is not a model, which is the Track 1
+crossover the abstract claims.
+
+Runs today: `python harness/e0_baselines.py corpus/prototype_k8s.jsonl`.
 
 ### E1 · Escalation latency
 Monitor role. For window *n*, model receives a rolling summary of windows `1..n-1` plus window `n`, and returns strict JSON:
@@ -165,7 +210,10 @@ verification-gap/
 │   ├── answer_keys/
 │   └── CITATIONS.md       # every structural parameter → published source sentence
 ├── harness/
-│   ├── client.py          # async multi-provider, cached, rate-limited, hard-capped
+│   ├── client.py          # multi-provider, cached, rate-limited, hard-capped
+│   ├── PROVIDERS.md       # the roster + measured RPM/RPD per provider
+│   ├── measure_limits.py  # run sizing from a measured cap, not a guess
+│   ├── e0_baselines.py    # rule detectors; no API calls
 │   ├── e1_escalation.py
 │   ├── e2_refusal.py
 │   └── e3_incoherence.py
@@ -211,6 +259,7 @@ verification-gap/
 ## 7. Submission checklist
 
 - [ ] Report PDF on the official template (fetch it from the Guidelines tab on the day — not from any acceptance email)
+- [ ] **8 pages maximum.** Artifacts go in the linked repo or an appendix, never embedded in the report.
 - [ ] Abstract ≤ **150 words**, containing the headline number and the word "reconstruction"
 - [ ] Author names + affiliations
 - [ ] **Limitations and Dual-Use Considerations appendix** — required, and it is also scored
@@ -218,4 +267,5 @@ verification-gap/
 - [ ] No novel installation recipes released without review
 - [ ] Public GitHub repo linked
 - [ ] 3–5 min video demo — record Sunday if and only if P0+P1 are done
-- [ ] Track selection: **Track 2**, noting Track 5 crossover in the abstract
+- [ ] Track selection: **Track 2 — Incident Reconstruction & Forecasting**, naming the **Track 1 — Containment Standards** crossover in the abstract. (The sprint's five tracks are 1 Containment Standards · 2 Incident Reconstruction & Forecasting · 3 Regulatory Response · 4 Communication & Warning Shots · 5 Open Track. An earlier draft of this repo used different names for them.)
+- [ ] Submitted by **Sunday night IST**. The hard cutoff is Sun 13 Sep 23:59 **AoE** = **Mon 14 Sep 17:29 IST** — buffer, not schedule.
