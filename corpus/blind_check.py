@@ -283,6 +283,48 @@ def score(answers: dict[int, str], key: list[dict]) -> dict:
     }
 
 
+def leak_scan(key: list[dict], unlabelled_text: str, min_windows: int = 3) -> list[dict]:
+    """Find literal tokens that PERFECTLY predict the source stream.
+
+    B's score tells you whether one person found a tell. This tells you what
+    tells exist, which is the thing "fix the templates, not the labels"
+    actually needs - a leak nobody happened to notice is still a leak, and the
+    next labeller (or a model in E1) may be more systematic than the last.
+
+    A token counts as a leak if it appears in at least `min_windows` windows
+    and every window containing it has the same true label. Window-level
+    presence, not raw frequency, so one chatty window cannot manufacture one.
+
+    This is a screen over the 20 SAMPLED windows, not proof about the whole
+    corpus - a token can look perfect here and be mixed at full scale. Confirm
+    any hit against templates.py before changing anything."""
+    labels = {e["anon_id"]: e["true_label"] for e in key}
+    blocks = re.split(r"^## window (\d+)$", unlabelled_text, flags=re.M)[1:]
+
+    seen: dict[str, set[int]] = {}
+    for wid, body in zip(blocks[0::2], blocks[1::2]):
+        wid = int(wid)
+        for tok in set(re.findall(r"[A-Za-z0-9_./'\-]{3,}", body)):
+            tok = tok.strip("'-./")
+            if len(tok) < 3 or tok.isdigit():
+                continue
+            seen.setdefault(tok, set()).add(wid)
+
+    leaks = []
+    for tok, wids in seen.items():
+        if len(wids) < min_windows:
+            continue
+        cls = {labels[w] for w in wids}
+        if len(cls) == 1:
+            leaks.append({
+                "token": tok,
+                "predicts": cls.pop(),
+                "n_windows": len(wids),
+                "windows": sorted(wids),
+            })
+    return sorted(leaks, key=lambda d: -d["n_windows"])
+
+
 def format_result(res: dict) -> str:
     lines = [
         "blind separability check (SPRINT_PLAN.md Fri+2h)",
@@ -320,8 +362,17 @@ def main() -> None:
         key = payload["key"] if isinstance(payload, dict) else payload
         answers = parse_answers(Path(args.score).read_text(encoding="utf-8"))
         res = score(answers, key)
+        res["leak_scan"] = leak_scan(key, UNLABELLED_PATH.read_text(encoding="utf-8"))
         RESULT_PATH.write_text(json.dumps(res, indent=2), encoding="utf-8")
         print(format_result(res))
+        if res["leak_scan"]:
+            print("\n  perfect lexical separators in this sample "
+                  "(token -> stream it always indicates):")
+            for l in res["leak_scan"]:
+                print(f"    {l['token']:<24} -> {l['predicts']:<6} "
+                      f"({l['n_windows']} windows: {l['windows']})")
+            print("  these are candidate template leaks - confirm against "
+                  "templates.py before changing anything")
         print(f"\nwrote {RESULT_PATH.relative_to(REPO)}")
         return
 
