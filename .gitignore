@@ -4,3 +4,5 @@ __pycache__/
 .env
 .env.*
 runs/
+corpus/prototype_recon.jsonl
+corpus/prototype_dropper.jsonl
