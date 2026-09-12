@@ -4,7 +4,7 @@
 
 # Results — DRAFT
 
-Generated 2026-09-12T11:22:52+00:00 from `runs/e1/live/e1_decisions.jsonl` (190 settled records).
+Generated 2026-09-12T11:29:22+00:00 from `runs/e1/live/e1_decisions.jsonl` (190 settled records).
 
 ## R0. What the denominators are
 
@@ -91,15 +91,29 @@ completeness (Figure 2); the headline pair is R3's.
 
 | model | incoherence rate | escalated | refused to assist | McNemar p |
 |---|---|---|---|---|
-| `gpt-oss-120b` | 0/11 (0%, CI95 0%–26%) | 3/11 = 27% | 0/11 = 0% | 0.008 |
+| `gpt-oss-120b` | 0/24 (0%, CI95 0%–14%) | 9/24 = 38% | 0/24 = 0% | 0.000 |
+| `gpt-oss-20b` | 0/8 (0%, CI95 0%–32%) | 4/8 = 50% | 0/8 = 0% | 0.125 |
 
-Pooled: **0/11** scoreable 2×2 cells are INCOHERENT.
+Pooled: **0/32** scoreable 2×2 cells are INCOHERENT.
 
 **This is the pre-registered null, and it is a result, not a failed
 experiment.** PLAN.md §4 pre-registers that a coherent model shows
 incoherence ≈ 0; PREREGISTRATION branch H-D commits in advance to
 E0+E1 carrying the paper in that case. No model in this roster
 refused to analyse evidence it had just declined to escalate.
+
+### The asymmetry is real, and it runs the other way
+
+Incoherence is nil, but the two frames do **not** agree, and the
+McNemar test on identical evidence is significant:
+
+- `gpt-oss-120b`: assists on 24/24 moments but escalates on only 9/24 (p = 0.0001); 15 moments where it helped without paging, 0 the reverse.
+
+The pre-registered concern was a model that clams up in both
+frames. What the data shows is the mirror image: these models are
+**far more willing to analyse an intrusion than to raise an alarm
+about it.** Refusal is not the failure mode here — under-escalation
+on evidence the model will happily explain to you is.
 
 Cells outside the 2×2 (`filtered-both`, `unscoreable-*`) are excluded
 from the denominator and reported separately: in each the model made
