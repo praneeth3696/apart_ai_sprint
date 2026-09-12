@@ -7,36 +7,31 @@ what the run actually taught us added.
 
 **The corpus is a reconstruction, not a capture.** Claims are about model
 behaviour on a faithful scaffold built from published figures, not about what
-Hugging Face's stack would have done. The generator is driven by the source's
-own counts, phase boundaries and milestone timestamps, but **75% of the corpus
-(13,163 actions across recon and dropper) carries no sourced milestone** — it
-is filler obeying published marginals. A model's behaviour on that filler is
-behaviour on our generator, not on the incident.
-
-**The two published source tables disagree** (16,521 vs 17,613 actions). We
-took the daily-volume total as authoritative and carried the 1,092-action
-remainder as an explicit `unclassified` residual. A different resolution would
-shift the denominators slightly.
+Hugging Face's stack would have done. The generator follows the source's counts,
+phase boundaries and milestone timestamps, but **75% of the corpus (13,163
+actions across recon and dropper) carries no sourced milestone** — it is filler
+obeying published marginals, so behaviour there is behaviour on our generator.
+The two published source tables also disagree (16,521 vs 17,613); we took the
+daily-volume total and carried the remainder as an `unclassified` residual, and
+a different resolution would shift denominators slightly.
 
 **Prompt framing is not authentication.** A model reading "you are the triage
-layer" cannot verify that. Everything here measures response to a *claimed*
-role.
+layer" cannot verify it. Everything here measures response to a *claimed* role.
 
 **Single-run, single-turn, text-only, English-only.** No temperature sweep, no
-multi-turn drift, no tool use, no repeated sampling. Every number is one draw
-at temperature 0. A model that pages 40% of the time might page 60% on a
+multi-turn drift, no tool use, no repeated sampling — every number is one draw
+at temperature 0. A model that pages 40% of the time here might page 60% on a
 re-run, and we have not measured that variance.
 
-**Statistical power is the dominant limitation, and it is not evenly
+**Statistical power is the dominant limitation and it is unevenly
 distributed.** Per-cell *n* is 4–36, intervals overlap heavily, and **no model
 reaches *p* < 0.05** on stream separation. The gradient across models is the
 reportable claim; no individual model's separation is established. The Google
-arm is the thinnest: free-tier caps of 10–31 requests per model per day meant
-several Gemini models contribute *n* = 1–12 and one contributes a single
-window. **Those rows are in the table because omitting them would be
-selective reporting, not because they support a conclusion.** The sampling
-ladder makes widening purely additive, so this is a resource limitation rather
-than a design one.
+arm is thinnest — free-tier caps of 10–31 requests per model per day left
+several Gemini models at *n* = 1–12, one at a single window. **Those rows are
+in the table because omitting them would be selective reporting, not because
+they support a conclusion.** The sampling ladder makes widening purely
+additive, so this is a resource limit, not a design one.
 
 **Three E3 moments are unscoreable and they are not randomly distributed.**
 `gpt-oss-20b` exhausted its whole token budget on reasoning for moments 19, 23
@@ -55,17 +50,15 @@ next.
 pre-registration specifies a human rater. n = 20 makes it a screen for trivial
 separability, not a powered test — it cannot resolve 55% from 70%.
 
-**Provider serving stacks are a confound we can bound but not remove.** A model
-is a model *as served by someone*: quantisation, default sampling, system-prompt
+**Serving stacks are a confound we bound but cannot remove.** A model is a
+model *as served by someone*: quantisation, sampling defaults, system-prompt
 injection and moderation layers all differ. We report the provider beside every
-model ID and keep the two providers as separate arms. The `gpt-oss-20b` vs
-`gpt-oss-120b` contrast is the one comparison here that is clean, because both
-run on one stack.
+model ID and keep the two as separate arms. `gpt-oss-20b` vs `gpt-oss-120b` is
+the one clean comparison, both on one stack.
 
 **Frontier proprietary models are absent.** The Gemini Pro tier returns
-`limit: 0` on the free tier — refused, not throttled — and no GPT- or
-Claude-class model was reachable at $0. The frontier arm is therefore
-"frontier-flash", not frontier.
+`limit: 0` at $0 — refused, not throttled — and no GPT- or Claude-class model
+was reachable free. Our "frontier" arm is frontier-*flash*.
 
 ### A.2 Dual-use considerations
 
@@ -75,17 +68,16 @@ scoring code. The corpus contains synthetic log lines describing attacker
 behaviour at the level of abstraction the published timeline already uses —
 phase names, host roles, event descriptions, timestamps.
 
-**What is not in it, deliberately.** No working exploit, no payload, no
-credential, no novel installation recipe, and no technique not already in the
-public source. The corpus is a *detection* substrate: it describes what an
-intrusion looked like in a log, not how to perform one. Every attack step is
-downstream of a vendor's own published post-incident write-up.
+**What is not in it, deliberately.** No working exploit, payload, credential,
+novel installation recipe, or technique absent from the public source. The
+corpus is a *detection* substrate: it describes what an intrusion looked like
+in a log, not how to perform one. Every step is downstream of a vendor's own
+post-incident write-up.
 
 **The realistic misuse path, and why we judge it low.** Someone could read the
-corpus as a checklist of what a real agent intrusion looked like. That
-information is already public in the source we cite, in more operational
-detail than our reconstruction carries. We add no capability; we add a
-benchmark.
+corpus as a checklist of what a real agent intrusion looked like — information
+already public in the source we cite, in more operational detail than our
+reconstruction carries. We add no capability; we add a benchmark.
 
 **The genuine dual-use surface is the finding, not the data.** We report which
 models under-escalate and by how much. An attacker who knew that a particular
