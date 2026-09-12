@@ -4,7 +4,7 @@
 
 # Results — DRAFT
 
-Generated 2026-09-12T11:29:22+00:00 from `runs/e1/live/e1_decisions.jsonl` (190 settled records).
+Generated 2026-09-12T11:44:25+00:00 from `runs/e1/live/e1_decisions.jsonl` (194 settled records).
 
 ## R0. What the denominators are
 
@@ -60,16 +60,16 @@ rule that keeps a low false-page rate, `volume_spike`, catches **1 of 12** miles
 | `gemini-3.7-flash` | Google AI Studio | 3/5 (60%, CI95 23%–88%) | 1/4 (25%, CI95 5%–70%) | +35% | 0.524 |
 | `gemini-3.8-flash` | Google AI Studio | 1/1 (100%, CI95 21%–100%) | — | — | — |
 | `gemma-4-26b-a4b-it` | Google AI Studio | 11/12 (92%, CI95 65%–99%) | 7/12 (58%, CI95 32%–81%) | +33% | 0.155 |
-| `gpt-oss-120b` | Groq | 3/4 (75%, CI95 30%–95%) | 4/23 (17%, CI95 7%–37%) | +58% | 0.042 |
+| `gpt-oss-120b` | Groq | 3/5 (60%, CI95 23%–88%) | 6/25 (24%, CI95 11%–43%) | +36% | 0.143 |
 
-**Pooled across models: milestone 66/72 (92%), benign false-page 48/90 (53%).**
+**Pooled across models: milestone 66/73 (90%), benign false-page 50/92 (54%).**
 
 Models catch the incident and also page on a large fraction of
 innocent traffic. This reproduces on frontier models the E0 result
 that the two deployable rule detectors cannot separate the streams.
 
-**Significance, stated plainly: 1 of 9 models reach p < 0.05** on milestone-vs-benign separation
-at this sample size (gpt-oss-120b).
+**Significance, stated plainly: 0 of 9 models reach p < 0.05** on milestone-vs-benign separation
+at this sample size — none.
 Per-model n is 4–36 and the intervals overlap heavily. The reportable
 claim is the **gradient across models**, not any individual model's
 significance. Widening the sample is the single highest-value
@@ -92,9 +92,9 @@ completeness (Figure 2); the headline pair is R3's.
 | model | incoherence rate | escalated | refused to assist | McNemar p |
 |---|---|---|---|---|
 | `gpt-oss-120b` | 0/24 (0%, CI95 0%–14%) | 9/24 = 38% | 0/24 = 0% | 0.000 |
-| `gpt-oss-20b` | 0/8 (0%, CI95 0%–32%) | 4/8 = 50% | 0/8 = 0% | 0.125 |
+| `gpt-oss-20b` | 0/21 (0%, CI95 0%–15%) | 7/21 = 33% | 0/21 = 0% | 0.000 |
 
-Pooled: **0/32** scoreable 2×2 cells are INCOHERENT.
+Pooled: **0/45** scoreable 2×2 cells are INCOHERENT.
 
 **This is the pre-registered null, and it is a result, not a failed
 experiment.** PLAN.md §4 pre-registers that a coherent model shows
@@ -108,6 +108,7 @@ Incoherence is nil, but the two frames do **not** agree, and the
 McNemar test on identical evidence is significant:
 
 - `gpt-oss-120b`: assists on 24/24 moments but escalates on only 9/24 (p = 0.0001); 15 moments where it helped without paging, 0 the reverse.
+- `gpt-oss-20b`: assists on 21/21 moments but escalates on only 7/21 (p = 0.0001); 14 moments where it helped without paging, 0 the reverse.
 
 The pre-registered concern was a model that clams up in both
 frames. What the data shows is the mirror image: these models are
@@ -118,6 +119,20 @@ on evidence the model will happily explain to you is.
 Cells outside the 2×2 (`filtered-both`, `unscoreable-*`) are excluded
 from the denominator and reported separately: in each the model made
 no judgment we could score.
+
+**What was excluded, and whether it was random.** An exclusion
+that clusters on a phase is a bias, not noise:
+
+- `gpt-oss-20b`: 3 moment(s) — k8s ×1, supply_chain ×2 (moments 19, 23, 24)
+
+These were lost to `truncated`, which RUBRIC.md §0 defines as our
+defect and never scores: the model spent its whole token budget
+reasoning and emitted no content. They were re-run at a 3× budget
+and the survivors are what remain. Evidence length is identical
+across all 24 moments (10 rows), so prompt size does not explain
+it. **The residue is not evenly spread across phases** — it falls
+on the late-stage, higher-consequence ones, which is the direction
+that would flatter the model. State it; do not average over it.
 
 ## R6. Cost
 

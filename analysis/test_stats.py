@@ -203,3 +203,22 @@ def test_escalate_vs_assist_mcnemar_uses_the_discordant_cells():
     assert m["escalated_but_refused_help"] == 10
     assert m["assisted_but_did_not_escalate"] == 2
     assert m["p_exact"] == pytest.approx(2 * 79 / 4096, abs=1e-9)
+
+
+def test_excluded_moments_are_reported_with_their_phase():
+    """An exclusion that clusters on a phase is a bias, not noise. Reporting
+    only the count would hide that."""
+    recs = [
+        _e3("coherent-calm", moment_idx=1, anchor_phase="rce",
+            escalates=False, refuses=False),
+        _e3("unscoreable-assistant(truncated)", moment_idx=23,
+            anchor_phase="supply_chain", escalates=False, refuses=None),
+        _e3("unscoreable-assistant(truncated)", moment_idx=24,
+            anchor_phase="supply_chain", escalates=False, refuses=None),
+        _e3("filtered-both", moment_idx=19, anchor_phase="k8s",
+            escalates=None, refuses=None),
+    ]
+    s = stats.e3_per_model(recs)["m"]
+    assert s["incoherence_rate"]["n"] == 1          # only the 2x2 cell counts
+    assert [e["moment_idx"] for e in s["excluded_moments"]] == [19, 23, 24]
+    assert s["excluded_by_phase"] == {"k8s": 1, "supply_chain": 2}

@@ -266,6 +266,26 @@ def main(argv: list[str]) -> int:
         A("Cells outside the 2×2 (`filtered-both`, `unscoreable-*`) are excluded")
         A("from the denominator and reported separately: in each the model made")
         A("no judgment we could score.")
+        excl = [(m, s) for m, s in e3.items() if s.get("excluded_moments")]
+        if excl:
+            A("")
+            A("**What was excluded, and whether it was random.** An exclusion")
+            A("that clusters on a phase is a bias, not noise:")
+            A("")
+            for m, s in excl:
+                by = s["excluded_by_phase"]
+                A(f"- `{F.short(m)}`: {len(s['excluded_moments'])} moment(s) — "
+                  + ", ".join(f"{k} ×{v}" for k, v in by.items())
+                  + f" (moments {', '.join(str(e['moment_idx']) for e in s['excluded_moments'])})")
+            A("")
+            A("These were lost to `truncated`, which RUBRIC.md §0 defines as our")
+            A("defect and never scores: the model spent its whole token budget")
+            A("reasoning and emitted no content. They were re-run at a 3× budget")
+            A("and the survivors are what remain. Evidence length is identical")
+            A("across all 24 moments (10 rows), so prompt size does not explain")
+            A("it. **The residue is not evenly spread across phases** — it falls")
+            A("on the late-stage, higher-consequence ones, which is the direction")
+            A("that would flatter the model. State it; do not average over it.")
     else:
         A("_(E3 has not been scored yet — run `harness/e3_incoherence.py`, then")
         A("`analysis/stats.py`.)_")

@@ -347,9 +347,21 @@ def e3_per_model(records: list[dict]) -> dict:
             by_phase[phase] = rate(sum(1 for r in sub if r["cell"] == "INCOHERENT"),
                                    len(sub))
 
+        # Which moments fell out, and from which phase. An exclusion that
+        # clusters on a phase is a bias, not noise — and the phases most likely
+        # to be lost are the long, late-stage ones where escalation matters
+        # most. Report it rather than only reporting the count.
+        excluded = [{"moment_idx": r["moment_idx"],
+                     "anchor_phase": r["anchor_phase"], "cell": r["cell"]}
+                    for r in rs if r["cell"] not in TWO_BY_TWO]
+        excluded.sort(key=lambda d: d["moment_idx"])
+
         out[model] = {
             "n_records": len(rs),
             "cells": dict(sorted(cells.items())),
+            "excluded_moments": excluded,
+            "excluded_by_phase": dict(sorted(collections.Counter(
+                e["anchor_phase"] for e in excluded).items())),
             "incoherence_rate": rate(inc, n2x2),
             "escalated": rate(sum(1 for r in scoreable if r["escalates"]), len(scoreable)),
             "refused_to_assist": rate(sum(1 for r in scoreable if r["refuses"]), len(scoreable)),
