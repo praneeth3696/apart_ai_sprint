@@ -1,7 +1,7 @@
 # PROVIDERS.md — the roster, and what we measured
 
-**Status: MEASURED 2026-09-12 09:29–09:48 UTC.** One provider obtained
-(Google AI Studio); the rest still have no key. Owner: **B (Praneeth)**.
+**Status: MEASURED 2026-09-12, 09:29–11:05 UTC.** Two providers obtained
+(Google AI Studio, Groq); the rest still have no key. Owner: **B (Praneeth)**.
 See `SPRINT_PLAN.md` §0.4.
 
 Every row here must be **measured, not assumed**, and stamped with the UTC
@@ -42,7 +42,7 @@ study stays at **$0.00** and that stays in the abstract.
 | OpenRouter (existing) | ✅ 09-09 | `OPEN_ROUTER_KEY` | 11 `:free` models, `PREREGISTRATION.md` §8a | ? | **?** | — | **No key present on this machine.** Unfunded, negative balance. Not used for E1. |
 | Google AI Studio | ✅ 09-12 | `GOOGLE_AI_STUDIO_KEY` | 9 of 55 (see §1a) | see §1a | **per-model, see §1a** | 2026-09-12 09:29–09:48 | **Frontier arm restored at $0.** Quota is per-model, not per-account — see §1b. |
 | GitHub Models | ☐ | `GITHUB_MODELS_TOKEN` | | | | | Free with the GitHub account this repo already uses; GPT-class arm |
-| Groq | ☐ | `GROQ_API_KEY` | | | | | Open-weight, high throughput — solves the E1 volume problem |
+| Groq | ✅ 09-12 | `GROQ_API_KEY` | 6 of 14 (see §1c) | ~5 (TPM-bound) | **1,000/day/model** | 2026-09-12 10:55–11:05 | **Solved the volume problem, as predicted.** Open-weight only — no frontier arm here. |
 | Cerebras | ☐ | `CEREBRAS_API_KEY` | | | | | Redundancy against a Saturday 429 wall |
 | Mistral | ☐ | `MISTRAL_API_KEY` | | | | | Cheap diversity |
 | Anthropic first-party | ☐ | `ANTHROPIC_API_KEY` | | | | | **Only needed for the §0.2 attribution test.** `client.py` already routes `anthropic:<model>` here. |
@@ -111,6 +111,51 @@ Also measured: this endpoint returns **no** `x-ratelimit-*` headers and **no**
 `Retry-After`. The only machine-readable statement of the wait is
 `google.rpc.RetryInfo`, and when that is absent, prose at the end of
 `error.message`. `client._suggested_delay()` parses both.
+
+### 1c. Groq — per-model results, measured 2026-09-12 11:00 UTC
+
+Route as `groq:<id>`. Probed with a full-length E1 monitor prompt, not a toy
+one, and the rate figures are read off the `x-ratelimit-*` response headers
+the endpoint attaches to `/chat/completions` (it attaches none to `/models`).
+
+| Model id | Live call | Latency | RPD | Notes |
+|---|---|---|---|---|
+| `openai/gpt-oss-120b` | ✅ | 1.2 s | 1,000 | Open-weight, largest on offer |
+| `openai/gpt-oss-20b` | ✅ | 0.7 s | 1,000 | **Same family as the 120b — a clean capability-scaling pair on one serving stack** |
+| `qwen/qwen3.8-27b` | ✅ | 0.7 s | 1,000 | |
+| `qwen/qwen3.6-27b` | ✅ | 4.3 s | 1,000 | Version pair with 3.8 |
+| `allam-2-7b` | ✅ | 0.3 s | 7,000 | 7B; smallest capability point available |
+| `groq/compound-mini` | ✅ | 1.4 s | 250 | An agentic *system*, not a bare model — different object, treat with care |
+| `whisper-*`, `canopylabs/orpheus-*` | — | — | — | Audio/TTS. Not applicable. |
+| `meta-llama/llama-prompt-guard-2-*` | — | — | — | Prompt-injection classifiers, not chat models. |
+| `openai/gpt-oss-safeguard-20b` | — | — | — | A **safety classifier**. Not an E1 monitor, but directly relevant to `harness/safety_classifier_contrast.py` if that thread is picked back up. |
+
+**The binding limit is tokens, not requests.** 8,000 TPM against an E1 prompt
+of ~1,600 tokens is about **5 requests/minute** — so the 1,000/day cap is
+never reached in practice and wall-clock is what rations the run. Set
+`--rpm 4`.
+
+**One trap, and it cost an hour.** Groq is behind Cloudflare, which rejects
+`urllib`'s default `Python-urllib/3.x` User-Agent with **HTTP 403 and a body
+of exactly `error code: 1010`** — no JSON, no message, and indistinguishable
+from a rejected API key. `client.py` now sends a real User-Agent on every
+request. If a provider ever 403s with an opaque body, check the User-Agent
+before you check the key.
+
+### 1d. What the two providers are each for
+
+They are not interchangeable and the report should not present them as one
+pool:
+
+- **Google AI Studio = the frontier arm**, at thin n. 10–31 calls/model/day
+  is enough for a signal, not for a tight interval.
+- **Groq = the open-weight arm**, at thick n. 1,000/day/model carries the
+  statistical weight, and `gpt-oss-20b` vs `gpt-oss-120b` is a
+  capability-scaling comparison *within one family on one serving stack*.
+
+Gemma-4 on Google and GPT-OSS/Qwen on Groq are both open-weight, so the
+open-weight side spans two serving stacks — which is the §4 confound, and is
+why provider is reported next to every model id.
 
 ## 2. How to measure
 
