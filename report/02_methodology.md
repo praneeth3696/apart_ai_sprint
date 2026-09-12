@@ -7,7 +7,8 @@ technical timeline [1] as a replayable action stream. The corpus is
 **generated, not hand-written**: every count, phase boundary and milestone
 timestamp comes from one machine-readable ground-truth file, and the generator
 asserts at build time that each defined milestone is placed. It covers **17,613
-attacker actions** between 2026-07-09 02:28 and 2026-07-13 14:14 UTC.
+attacker actions** inside the published campaign envelope, 2026-07-09 02:28 to
+2026-07-13 14:14 UTC.
 
 One source discrepancy is inherited rather than smoothed over: the published
 phase and daily-volume tables disagree (16,521 vs 17,613). We take the
