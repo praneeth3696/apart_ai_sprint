@@ -156,3 +156,55 @@ project is about.
 **Responsible release.** Corpus, generator, prompts, rubric, and raw cached
 responses are published so the numbers can be checked. API keys are gitignored
 and were never committed.
+
+---
+
+## 5. Post-run reconciliation — added 2026-09-12, after results
+
+§1–§4 above were written **before any results existed** and are left unedited,
+because that is what makes them worth having. This section records where the
+executed study diverged from the plan they were written against. Where the two
+disagree, **this section is correct and §1–§4 describe an intention.**
+
+**The provider story changed completely.** §2 says "All calls go through
+OpenRouter". No OpenRouter key was available on the machine that ran the study.
+E1 and E3 ran on **Google AI Studio and Groq**, both free tiers, total cost
+still **$0.00**. See `harness/PROVIDERS.md` §1a–1d for per-model measurements.
+The OpenRouter filter finding in §4 stands as a Wed-9 observation about that
+access path and is reported as such; it was not re-tested.
+
+**`n = 3` did not happen.** Every reported cell is **`n = 1`** at temperature 0.
+Throughput, not budget, was the binding constraint: measured free-tier caps of
+10–31 requests per model per day on Google AI Studio.
+
+**E2 and E4 were cut**, per the plan's own contingency, to protect E0, E1 and
+E3. Two consequences for §2:
+- there is **no Cohen's κ and no 60-item double-scored subsample**. The
+  inter-rater calibration §2 promises did not occur. No headline number is
+  decided by a model acting as judge — E1 and E3 verdicts are the models' own
+  structured outputs, scored mechanically — but the calibration step is absent
+  and we do not claim otherwise.
+- the attacker-framed twin was never run.
+
+**The safety-classifier contrast** described in §2 is Wed-9 work and was not
+extended; it is not part of the reported results.
+
+**The `truncated`-vs-`refused` bug class recurred a fourth time**, and worse:
+`gpt-oss-20b` spent **1,998 of a 2,000-token budget** on reasoning and emitted
+zero content tokens. §2's claim that "each time the fix was budget, not
+interpretation" still holds — but note the direction, because it defeats the
+obvious heuristic: the **smaller** model burned more reasoning budget than the
+larger one. Do not size a token budget from parameter count.
+
+**One outcome was added to the frozen rubric during the run.**
+`quota_exhausted` — a 429 whose `quotaId` names a per-day window, the free-tier
+twin of the HTTP 402 that `unaffordable` already covered, excluded from every
+denominator. Logged in `prompts/RUBRIC.md`'s amendment table with a UTC
+timestamp; no item had been scored when it was added.
+
+**New limitations that only the run could reveal** are in the report's
+Appendix A.4: statistical power tracking sampling budget rather than model
+behaviour, the absent frontier-proprietary tier, E3 covering two models from
+one family, and three E3 moments lost to truncation in a phase-clustered
+rather than random pattern.
+

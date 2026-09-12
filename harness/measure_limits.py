@@ -51,7 +51,7 @@ from datetime import datetime, timezone
 REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "harness"))
 
-from client import _find_in_env  # noqa: E402
+from client import USER_AGENT, _find_in_env  # noqa: E402
 
 OUT_PATH = REPO / "harness" / "measured_limits.json"
 
@@ -84,7 +84,9 @@ RATE_HEADERS = (
 
 
 def _get(url: str, headers: dict, timeout: int = 30) -> tuple[int, dict, str]:
-    req = urllib.request.Request(url, headers=headers, method="GET")
+    # User-Agent is load-bearing: Groq's Cloudflare edge 403s urllib's default.
+    req = urllib.request.Request(
+        url, headers={"User-Agent": USER_AGENT, **headers}, method="GET")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, dict(r.headers), r.read().decode("utf-8")

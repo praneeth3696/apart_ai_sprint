@@ -313,6 +313,27 @@ genuinely free API tiers could restore a frontier arm at $0 — Google AI Studio
 Groq, Cerebras, Mistral. None are verified yet. If any works, it re-enters as a
 frontier arm and this section is amended with a timestamp.
 
+> **RESOLVED 2026-09-12 — two of the five worked; see §9 for the timestamped
+> amendments.**
+>
+> - **Google AI Studio** verified 09:29–09:48 UTC. A frontier arm at $0 is
+>   restored, with two limits found by measurement rather than assumed: the
+>   **Pro tier is unavailable at $0** (a free-tier 429 reports `limit: 0`, so
+>   it is refused rather than throttled) and the **Gemini 2.5 family 404s for
+>   newly issued keys**. Per-model daily caps measured at **10–31 requests**.
+> - **Groq** verified 10:55–11:05 UTC. Open-weight only, so it is *not* a
+>   frontier arm — but at **1,000 requests/day/model** it carries the
+>   statistical weight, and `gpt-oss-20b` vs `gpt-oss-120b` is a
+>   capability-scaling contrast within one family on one serving stack.
+>
+> **The consequence for the paragraph above:** E4's frontier-vs-open gap is
+> partially closed, and the two arms are reported separately rather than
+> pooled — Google is the frontier arm at thin n, Groq the open-weight arm at
+> thick n. GitHub Models, Cerebras and Mistral remain unverified: no key was
+> obtained, so they are absent rather than tested-and-rejected.
+>
+> Budget is unchanged at **$0.00**.
+
 ### 8d. Budget
 
 **$0.00.** Generation tier bills nothing. Anthropic tier bills nothing because
@@ -333,6 +354,10 @@ is.
 | 2026-09-10 | **Throughput declared the binding constraint.** §8d says cost stopped being a project risk and coverage became one; we now name the specific mechanism: the free-tier daily request cap, unmeasured at freeze time. E1 window count is sized from a measured cap rather than fixed at the 250 in `PLAN.md` §3. Sampling is stratified (every milestone-carrying window, plus a random sample of the rest, plus a size-matched benign sample) and is reported as a design choice in Methodology. | **Before.** |
 | 2026-09-11 | **§4 escalation timestamp and both lead times corrected**: 07-11 19:33:30 → **17:47:30**; first-exfil lead −53.4 h → **−51.6 h**; admin/host-level lead +8.2 h → **+10.0 h**. Cause: `tailscale_key_extracted` was assigned to the `tailscale` phase but timestamped 07-11 20:18, 65 minutes *before* that phase's published `first_seen` (21:23). It could therefore never fall inside an allocated day and the generator dropped it **silently** — 11 milestones placed where 12 are defined, undetected until the phases were merged and counted. It is reassigned to `k8s`, which the source's own wording supports ("VPN auth key extracted from Hugging Face **Kubernetes secrets**"; its telemetry line is a `kubectl get secret`). Its presence at 20:18 re-anchors the interpolation of `imds_credentials`, which has no sourced time. Two guards added so neither failure can recur silently: the generator now asserts every defined milestone is placed, and within-phase ordering is chronological rather than by global chain `order` (the two provably disagree). The rule, its wording, the identity of the escalation milestone and the sign of every lead time are unchanged. | **Before.** No model runs have been made against the full corpus; this is a corpus-construction correction, and the new numbers were computed after the fix rather than chosen. |
 | 2026-09-11 | **The four 2026-09-10 rows above were restored.** They were silently reverted by commit `d3941e5`, which rebuilt this file from a copy predating PR #2 and re-applied only its own §4/§9 edits; git recorded that as an ordinary edit, so nothing conflicted and nothing warned. The revert also put §3a, §3d, H6, §6 and §10 back to the withdrawn attribution wording. Restored by 3-way merge against the pre-PR#2 base, so the 2026-09-11 correction above is preserved untouched. No claim is changed by this restoration; it only undoes an accidental loss. | **Before.** Bookkeeping only — no data involved. |
+| 2026-09-12 10:30 UTC | **Google AI Studio enters the roster as a frontier arm, at $0.** §8c committed to exactly this: *"If any works, it re-enters as a frontier arm and this section is amended with a timestamp."* Verified live 09:29–09:48 UTC; 9 of 55 model ids reachable and usable for E1 (`harness/PROVIDERS.md` §1a). Two things the roster does **not** get: the **Pro tier is unavailable at $0** — a free-tier 429 reports `limit: 0`, so it is refused rather than throttled — and the **Gemini 2.5 family 404s for newly issued keys**, so the specific ids named at freeze time are not obtainable now. The budget is unchanged at **$0.00**. | **Before.** Amended at 10:30 UTC; the first E1 call against the full corpus was 09:50 UTC and the first *result was read* at 10:27 UTC — so the roster decision was made before any E1 outcome was inspected. The 16-record smoke that preceded it is disclosed here as pipeline-proving, not as a result. |
+| 2026-09-12 11:10 UTC | **Groq enters the roster as an open-weight arm.** Also named in §8c. Verified live 10:55–11:05 UTC; 6 chat models usable (`harness/PROVIDERS.md` §1c). It carries the statistical weight the Google tier cannot: **1,000 requests/day/model against Google's measured 10–31**. `openai/gpt-oss-20b` vs `openai/gpt-oss-120b` gives a capability-scaling comparison *within one family on one serving stack*, which is the cleanest form of the frontier-vs-open contrast **H4 was withdrawn for lacking**. Groq serves no frontier-proprietary model, so the two providers are reported as two arms and never pooled. Budget unchanged at **$0.00**. | **After** the first E1 pass (Google-only, 144 records) had been read. Disclosed as such. The Groq roster was chosen on measured throughput and on model-family structure, **not** on any Groq outcome — no Groq E1 result existed when the roster was fixed. |
+| 2026-09-12 11:15 UTC | **§7's first-page EAI is reported with a stated caveat rather than as the headline, and a second metric pair is added: milestone-window hit rate against benign false-page rate.** Reason, and it is an E0 result rather than a preference: every E0 detector fires at action **#15–51**, roughly 10,400 actions before the escalation point (#10,498), on filler that is byte-identical in both streams. On this corpus a first page therefore measures trigger-happiness, not detection, and the first E1 pass reproduced exactly that on real models. EAI is still computed and still reported (`analysis/stats.py --eai`); it is no longer the number the abstract leads with. **The metric definitions in §7 are unchanged — none is withdrawn.** | **Mixed, and disclosed as such.** The *reason* is an E0 result that predates any model call and is already in `analysis/e0_baselines.json`. The *decision to reprioritise* was taken after seeing the first E1 pass confirm it. Both metrics are reported for every model, so nothing is hidden by the ordering. |
+| 2026-09-12 11:20 UTC | **`prompts/RUBRIC.md` gained one outcome, `quota_exhausted`.** A 429 whose `quotaId` names a per-day window: the free-tier twin of the HTTP 402 that `unaffordable` already covers, excluded from every denominator. Recorded in that file's own amendment log with the same timestamp. | **Before.** **No E1 item had been scored when it was added**, so the frozen rubric's "applied to all previously-scored items or not at all" rule is satisfied vacuously. |
 
 ---
 
