@@ -402,6 +402,12 @@ def _backoff(status: int | None, headers, body: str, attempt: int) -> float:
         return min(max(suggested + 1.0, 1.0), 90.0)
     if status == 429:
         return min(15.0 * (2 ** attempt), 90.0)
+    if status in (500, 502, 503, 504, 529):
+        # "This model is currently experiencing high demand" is a real 503 we
+        # measured on 2026-09-12, and 1+2+4+8s of backoff was not enough to
+        # outlast the spike - the window was lost to an `error`. A server-side
+        # overload deserves more patience than a malformed request.
+        return min(5.0 * (2 ** attempt), 60.0)
     return float(2 ** attempt)
 
 

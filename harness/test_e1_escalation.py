@@ -346,11 +346,13 @@ def test_retry_after_header_still_wins_where_a_provider_sends_one():
     assert client._suggested_delay({"retry-after": "7"}, "") == 7.0
 
 
-def test_no_suggestion_means_a_quota_floor_for_429_only():
-    """A per-minute allowance does not refill in 2s. Everything else retryable
-    is a transient blip and should not wait 15s."""
-    assert client._backoff(429, {}, "", 0) >= 15.0
-    assert client._backoff(503, {}, "", 0) <= 2.0
+def test_backoff_floors_match_what_each_status_means():
+    """Three different waits for three different problems: a per-minute quota
+    does not refill in 2s, a server-side demand spike does not clear in 1s,
+    and a bare transport hiccup needs neither."""
+    assert client._backoff(429, {}, "", 0) >= 15.0      # quota window
+    assert 5.0 <= client._backoff(503, {}, "", 0) < 15.0  # overload spike
+    assert client._backoff(None, {}, "", 0) <= 2.0      # transport blip
 
 
 def test_backoff_is_capped():
@@ -547,3 +549,76 @@ def test_braces_inside_strings_do_not_split_a_span():
 
 def test_thought_block_with_no_verdict_still_returns_none():
     assert mf.parse_monitor('<thought>{"scratch": 1}</thought> no verdict') is None
+
+
+# --------------------------------------------------------------------------
+# 9. resuming a run - "re-run gaps only" has to actually re-run the gaps
+# --------------------------------------------------------------------------
+def test_only_settled_outcomes_count_as_done():
+    """A transient 503, a spent daily quota and a too-small token budget are
+    gaps, not results. If they counted as done, SPRINT_PLAN.md's Saturday
+    triage - "re-run gaps only" - could never fill them."""
+    assert e1.SETTLED_OUTCOMES == {"comply", "refused", "filtered", "unparseable"}
+    for gap in ("error", "quota_exhausted", "unaffordable", "truncated"):
+        assert gap not in e1.SETTLED_OUTCOMES
+
+
+def test_resume_skips_settled_and_retries_gaps(tmp_path, monkeypatch, capsys):
+    out = tmp_path / "d.jsonl"
+    rows = [
+        {"model": "m", "stream": "attack", "window_idx": 1, "outcome": "comply"},
+        {"model": "m", "stream": "attack", "window_idx": 2, "outcome": "error"},
+        {"model": "m", "stream": "benign", "window_idx": 3, "outcome": "filtered"},
+        {"model": "m", "stream": "benign", "window_idx": 4, "outcome": "quota_exhausted"},
+    ]
+    out.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+
+    seen: list[tuple[str, int]] = []
+
+    def fake_run_window(caller, model, stream, w, prompt, why, max_tokens):
+        seen.append((stream, w["window_idx"]))
+        return {"outcome": "comply", "page_oncall": False, "severity": "info",
+                "rationale": "r", "raw_head": "", "reask": False, "cached": True,
+                "action_idx_start": 1, "window_idx": w["window_idx"],
+                "model": model, "stream": stream, "gt": w["_gt"]}
+
+    windows = _fake_windows(6, milestones=())
+    monkeypatch.setattr(e1, "run_window", fake_run_window)
+    monkeypatch.setattr(e1, "WINDOW_FILES",
+                        {"attack": tmp_path / "a.json", "benign": tmp_path / "b.json"})
+    (tmp_path / "a.json").write_text(json.dumps(windows))
+    (tmp_path / "b.json").write_text(json.dumps(windows))
+
+    e1.main(["--models", "m", "--select", "head", "--windows", "4",
+             "--out", str(out), "--dry-run"])
+
+    # attack/1 and benign/3 were settled and must not be paid for again;
+    # attack/2 and benign/4 were gaps. Window indices repeat across streams,
+    # so the key has to include the stream.
+    assert ("attack", 1) not in seen and ("benign", 3) not in seen
+    assert ("attack", 2) in seen and ("benign", 4) in seen
+    assert "2 gaps to retry" in capsys.readouterr().out
+
+
+def test_last_record_wins_when_a_gap_is_retried(tmp_path):
+    """The file is append-only, so a retried window appears twice. Anything
+    reading it must take the last row or it will score the failure."""
+    out = tmp_path / "d.jsonl"
+    out.write_text(
+        json.dumps({"model": "m", "stream": "attack", "window_idx": 2,
+                    "outcome": "error"}) + "\n" +
+        json.dumps({"model": "m", "stream": "attack", "window_idx": 2,
+                    "outcome": "comply"}) + "\n")
+    latest = {}
+    for line in out.read_text().splitlines():
+        r = json.loads(line)
+        latest[(r["model"], r["stream"], r["window_idx"])] = r["outcome"]
+    assert latest[("m", "attack", 2)] == "comply"
+
+
+def test_server_overload_gets_a_longer_backoff_than_a_client_error():
+    """Measured 2026-09-12: a 503 "experiencing high demand" outlasted
+    1+2+4+8s and cost us the window."""
+    assert client._backoff(503, {}, "", 0) >= 5.0
+    assert client._backoff(503, {}, "", 3) >= 40.0
+    assert client._backoff(503, {}, "", 9) == 60.0

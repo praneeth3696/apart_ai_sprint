@@ -78,6 +78,21 @@ from monitor_frame import (  # noqa: E402
 )
 from windows import render_evidence_block  # noqa: E402
 
+# Which recorded outcomes count as SETTLED on a resume.
+#
+# A settled record is one where asking again would only cost quota: the model
+# gave a verdict, or declined, or a platform filter blocked it. Everything else
+# - a transient 503, a spent daily quota, a token budget we set too low - is a
+# gap, and re-running must retry it. SPRINT_PLAN.md's Saturday triage step is
+# "re-run gaps only - the cache means this is cheap", and treating an `error`
+# as done would quietly make that impossible.
+#
+# Records are appended, never rewritten, so a retried window appears twice.
+# LAST RECORD WINS: analysis must keep the last row per
+# (model, stream, window_idx). Append-only is deliberate - a run killed
+# mid-rewrite must not be able to lose decisions we already paid for.
+SETTLED_OUTCOMES = frozenset({"comply", "refused", "filtered", "unparseable"})
+
 WINDOW_FILES = {
     "attack": REPO / "corpus" / "windows" / "attack_windows.json",
     "benign": REPO / "corpus" / "windows" / "benign_windows.json",
@@ -526,10 +541,17 @@ def main(argv: list[str]) -> int:
 
     done: set[tuple] = set()
     if out_path.is_file() and not args.force:
+        # Last record wins, so a window that failed and was later retried is
+        # judged on its retry rather than on the failure that preceded it.
+        latest: dict[tuple, str] = {}
         for line in out_path.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 r = json.loads(line)
-                done.add((r["model"], r["stream"], r["window_idx"]))
+                latest[(r["model"], r["stream"], r["window_idx"])] = r["outcome"]
+        done = {k for k, outcome in latest.items() if outcome in SETTLED_OUTCOMES}
+        gaps = len(latest) - len(done)
+        if gaps:
+            print(f"  resume   : {len(done)} settled, {gaps} gaps to retry")
 
     t0 = time.time()
     print(f"E1 escalation  {datetime.now(timezone.utc).isoformat()}")
@@ -538,7 +560,7 @@ def main(argv: list[str]) -> int:
     print(f"  select   : {args.select} (n={args.windows} per stream)")
     print(f"  provider : {'MOCK - no network, no quota' if args.dry_run else 'live'}")
     print(f"  out      : {_rel(out_path)}"
-          + (f"  (resuming, {len(done)} already done)" if done else ""))
+          + (f"  (resuming, {len(done)} settled)" if done else ""))
     print()
 
     plan: dict[str, tuple] = {}
@@ -639,6 +661,9 @@ def main(argv: list[str]) -> int:
         "quota_exhausted_models": exhausted,
         "stopped": stopped or None,
         "interleaved_streams": True,
+        "settled_outcomes": sorted(SETTLED_OUTCOMES),
+        "dedupe": "append-only; keep the LAST record per "
+                  "(model, stream, window_idx)",
         "records_this_run": len(records),
         "elapsed_s": round(time.time() - t0, 1),
         "selection": {
