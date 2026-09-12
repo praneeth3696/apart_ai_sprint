@@ -1,7 +1,8 @@
 # PROVIDERS.md — the roster, and what we measured
 
-**Status: TEMPLATE, unfilled. Fill it Thursday night 2026-09-10.**
-Owner: **B (Praneeth)**. See `SPRINT_PLAN.md` §0.4.
+**Status: MEASURED 2026-09-12 09:29–09:48 UTC.** One provider obtained
+(Google AI Studio); the rest still have no key. Owner: **B (Praneeth)**.
+See `SPRINT_PLAN.md` §0.4.
 
 Every row here must be **measured, not assumed**, and stamped with the UTC
 time it was measured — the same standard `PREREGISTRATION.md` §8 already holds
@@ -34,18 +35,82 @@ study stays at **$0.00** and that stays in the abstract.
 
 ---
 
-## 1. Roster — fill this in
+## 1. Roster
 
 | Provider | Signed up | Key env name | Models verified working | RPM | RPD | Measured (UTC) | Notes |
 |---|---|---|---|---|---|---|---|
-| OpenRouter (existing) | ✅ 09-09 | `OPEN_ROUTER_KEY` | 11 `:free` models, `PREREGISTRATION.md` §8a | ? | **?** | — | Unfunded, negative balance. **The RPD is the unknown that sizes the whole sprint.** |
-| Google AI Studio | ☐ | `GOOGLE_AI_STUDIO_KEY` | | | | | **Highest value — a genuine frontier arm at $0** |
+| OpenRouter (existing) | ✅ 09-09 | `OPEN_ROUTER_KEY` | 11 `:free` models, `PREREGISTRATION.md` §8a | ? | **?** | — | **No key present on this machine.** Unfunded, negative balance. Not used for E1. |
+| Google AI Studio | ✅ 09-12 | `GOOGLE_AI_STUDIO_KEY` | 9 of 55 (see §1a) | see §1a | **per-model, see §1a** | 2026-09-12 09:29–09:48 | **Frontier arm restored at $0.** Quota is per-model, not per-account — see §1b. |
 | GitHub Models | ☐ | `GITHUB_MODELS_TOKEN` | | | | | Free with the GitHub account this repo already uses; GPT-class arm |
 | Groq | ☐ | `GROQ_API_KEY` | | | | | Open-weight, high throughput — solves the E1 volume problem |
 | Cerebras | ☐ | `CEREBRAS_API_KEY` | | | | | Redundancy against a Saturday 429 wall |
 | Mistral | ☐ | `MISTRAL_API_KEY` | | | | | Cheap diversity |
 | Anthropic first-party | ☐ | `ANTHROPIC_API_KEY` | | | | | **Only needed for the §0.2 attribution test.** `client.py` already routes `anthropic:<model>` here. |
 | Ollama (local) | ☐ | n/a | | ∞ | ∞ | | Offline insurance. No rate limit, fully deterministic, survives any outage. |
+
+### 1a. Google AI Studio — per-model results, measured 2026-09-12
+
+Probed by `GET /v1beta/openai/models` (55 ids) then one live completion each.
+Route them through `client.py` as `google:<id>`.
+
+| Model id | Live call | Latency | Notes |
+|---|---|---|---|
+| `gemini-3.8-flash` | ✅ | ~2 s | **RPD = 20/day**, measured (§1b). Newest frontier flash. Spent for 09-12 by the E1 smoke. |
+| `gemini-3.7-flash` | ✅ | ~2 s | |
+| `gemini-3.6-flash` | ✅ | ~3 s | |
+| `gemini-3.5-flash` | ✅ | ~2 s | |
+| `gemini-3.5-flash-lite` | ✅ | ~1 s | |
+| `gemini-3.1-flash-lite` | ✅ | ~1 s | ≥14 requests in a burst with no 429 — materially looser than `3.8-flash` |
+| `gemini-3-flash-preview` | ✅ | ~2 s | |
+| `gemma-4-26b-a4b-it` | ✅ | ~36 s | **Open-weight arm.** Emits a `<thought>` block before the JSON; `monitor_frame.parse_monitor` handles it. |
+| `gemma-4-31b-it` | ⚠️ | ~57 s | 200 OK on a short prompt, **HTTP 500 on a full E1 prompt, 4/4 attempts**. Excluded from the roster. |
+| `gemini-2.5-flash`, `gemini-2.5-pro` | ❌ 404 | — | *"no longer available to new [keys]"*. The 2.5 family is retired for keys issued now. |
+| `gemini-3.1-pro-preview`, `gemini-pro-latest` | ❌ 429 | — | **`limit: 0`** on `...free_tier_requests`. The Pro tier is not merely throttled at $0 — it is unavailable. |
+| `gemini-flash-latest`, `gemini-flash-lite-latest` | ✅ | — | **Deliberately excluded: aliases.** An alias is not a reproducible model id and may share quota with its target. PROVIDERS.md §4 requires reporting the id actually served. |
+
+Not probed: embedding, TTS, image, video, audio, robotics and computer-use ids.
+
+### 1b. The finding that changes the sizing arithmetic
+
+`SPRINT_PLAN.md` §3 sizes the run from a single account-wide `total_rpd`:
+
+```
+windows_per_stream = (combined_RPD × (1 − reserve)) / (2 × n_models)
+```
+
+with the standing instruction *"If that returns fewer than 40 windows per
+stream: cut models, not windows."* **That instruction is wrong for this
+provider and must not be followed here.** It was written for OpenRouter, where
+one account-wide daily cap is divided among however many models you run.
+
+Google AI Studio's free tier is quoted per *project × model*. Read off the
+`quotaId` values in a live 429 body, measured 2026-09-12 09:46 UTC:
+
+```
+GenerateRequestsPerMinutePerProjectPerModel-FreeTier
+GenerateRequestsPerDayPerProjectPerModel-FreeTier
+GenerateContentInputTokensPerModelPerMinute-FreeTier
+GenerateContentInputTokensPerModelPerDay-FreeTier
+```
+
+Every one of them ends in `PerModel`. So models do not share a budget — each
+one brings its own. **Under this provider, cutting models cuts total
+throughput.** The correct move when short of quota is the opposite of §3's:
+add models, and take fewer windows from each.
+
+Two further consequences, both load-bearing for the overnight run:
+
+- The binding limit on `gemini-3.8-flash` is **per-DAY (20), not per-minute**.
+  No amount of backoff clears it. `client._quota_scope()` reads the window off
+  the `quotaId` and the E1 runner abandons that model rather than sleeping.
+- The 429 body says *"Please retry in 11.5s"* **for a quota with a daily
+  window**. The provider's own suggested delay is wrong here; trust the
+  `quotaId`, not the sentence.
+
+Also measured: this endpoint returns **no** `x-ratelimit-*` headers and **no**
+`Retry-After`. The only machine-readable statement of the wait is
+`google.rpc.RetryInfo`, and when that is absent, prose at the end of
+`error.message`. `client._suggested_delay()` parses both.
 
 ## 2. How to measure
 
@@ -69,6 +134,11 @@ with `reserve = 0.5` held back for E3, E2 and re-runs.
 > **If that returns fewer than 40 windows per stream: cut models, not windows.**
 > A latency curve needs resolution more than it needs a wide roster. An EAI
 > plotted over 20 windows is not a measurement.
+>
+> ⚠️ **This rule assumes an account-wide daily cap, and does not hold for
+> Google AI Studio, the only provider we actually have** — its quota is
+> per-model, so cutting models cuts throughput. See §1b. It still holds for
+> OpenRouter if that key ever comes back.
 
 A provider's advertised RPM is **not** its daily cap. Where the response
 headers do not state a daily figure, run a smoke loop and record where it
