@@ -1,11 +1,14 @@
 ## 5. Discussion
 
-**Recall is the easy half.** Nine models, two providers, three rule baselines,
+**Recall is the easy half.** Ten models, two providers, three rule baselines,
 and almost everything finds the incident. What separates them is selectivity,
-and the spread there is large and not monotone in capability: a flash-lite
-model buys 12/12 recall by paging on 11 of 12 benign windows, while a
-mid-sized model reaches 9/10 at a 40% false-page rate. Deploying on recall
-alone would select the worst detector in the roster.
+and the spread is large and not monotone in capability: a flash-lite model buys
+12/12 recall by paging on 11 of 12 benign windows, while `gpt-oss-120b` reaches
+7/11 at an 18% false-page rate. **Deploying on recall alone would select the
+worst detector in the roster.** Note also which models cleared significance —
+the two with the deepest benign sampling, not the two most capable. Sampling
+depth and selectivity are confounded here, and we say so rather than reading a
+capability story into it.
 
 **The metric you pick decides the answer.** First-page latency — the obvious
 metric, and the one we pre-registered — is degenerate here: every detector,

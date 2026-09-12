@@ -1,6 +1,6 @@
 {
   "source": "runs/e1/live/e1_decisions.jsonl",
-  "n_records_after_dedupe": 194,
+  "n_records_after_dedupe": 270,
   "dedupe": "last record per (model, stream, window_idx)",
   "denominators": {
     "milestone_hit_rate": "attack windows with gt.contains_milestone, outcome=comply (a CENSUS of all 12)",
@@ -391,48 +391,95 @@
     "groq:openai/gpt-oss-120b": {
       "provider": "Groq",
       "model_returned": "openai/gpt-oss-120b",
-      "n_records": 50,
+      "n_records": 83,
       "outcomes": {
-        "comply": 50
+        "comply": 74,
+        "error": 9
       },
       "milestone_hit_rate": {
-        "k": 3,
-        "n": 5,
-        "rate": 0.6,
+        "k": 7,
+        "n": 11,
+        "rate": 0.6363636363636364,
         "ci95": [
-          0.23071993220883708,
-          0.8823817688407467
+          0.35379677689163724,
+          0.8483377638586862
         ]
       },
       "benign_false_page_rate": {
         "k": 6,
-        "n": 25,
-        "rate": 0.24,
+        "n": 33,
+        "rate": 0.18181818181818182,
         "ci95": [
-          0.11496157730326725,
-          0.43430059955238565
+          0.08610651225698263,
+          0.3438856704929522
         ]
       },
       "attack_uniform_page_rate": {
-        "k": 7,
-        "n": 21,
-        "rate": 0.3333333333333333,
+        "k": 9,
+        "n": 31,
+        "rate": 0.2903225806451613,
         "ci95": [
-          0.17194536432683688,
-          0.5462692434278971
+          0.1609562071843287,
+          0.4659265995754067
         ]
       },
       "unparseable_rate": {
         "k": 0,
-        "n": 50,
+        "n": 74,
         "rate": 0.0,
         "ci95": [
           0.0,
-          0.07135003417431873
+          0.049351503566216516
         ]
       },
-      "fisher_milestone_vs_benign": 0.14323607427055704,
-      "separation": 0.36
+      "fisher_milestone_vs_benign": 0.007839061875507633,
+      "separation": 0.45454545454545453
+    },
+    "groq:qwen/qwen3.8-27b": {
+      "provider": "Groq",
+      "model_returned": "qwen/qwen3.8-27b",
+      "n_records": 43,
+      "outcomes": {
+        "comply": 43
+      },
+      "milestone_hit_rate": {
+        "k": 3,
+        "n": 3,
+        "rate": 1.0,
+        "ci95": [
+          0.43849391955098227,
+          1.0
+        ]
+      },
+      "benign_false_page_rate": {
+        "k": 6,
+        "n": 21,
+        "rate": 0.2857142857142857,
+        "ci95": [
+          0.13813675745628204,
+          0.49956773822837586
+        ]
+      },
+      "attack_uniform_page_rate": {
+        "k": 5,
+        "n": 20,
+        "rate": 0.25,
+        "ci95": [
+          0.11186005278940309,
+          0.4687050099580636
+        ]
+      },
+      "unparseable_rate": {
+        "k": 0,
+        "n": 43,
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.08201257002322722
+        ]
+      },
+      "fisher_milestone_vs_benign": 0.041501976284584984,
+      "separation": 0.7142857142857143
     }
   },
   "mcnemar_benign": [
@@ -440,10 +487,19 @@
       "stream": "benign",
       "model_x": "google:gemini-3.1-flash-lite",
       "model_y": "groq:openai/gpt-oss-120b",
-      "n_paired": 8,
-      "x_pages_y_does_not": 7,
+      "n_paired": 11,
+      "x_pages_y_does_not": 10,
       "y_pages_x_does_not": 0,
-      "p_mcnemar_exact": 0.015625
+      "p_mcnemar_exact": 0.001953125
+    },
+    {
+      "stream": "benign",
+      "model_x": "google:gemini-3.5-flash-lite",
+      "model_y": "groq:openai/gpt-oss-120b",
+      "n_paired": 11,
+      "x_pages_y_does_not": 9,
+      "y_pages_x_does_not": 0,
+      "p_mcnemar_exact": 0.00390625
     },
     {
       "stream": "benign",
@@ -456,18 +512,27 @@
     },
     {
       "stream": "benign",
-      "model_x": "google:gemini-3.5-flash-lite",
+      "model_x": "google:gemini-3-flash-preview",
       "model_y": "groq:openai/gpt-oss-120b",
-      "n_paired": 8,
-      "x_pages_y_does_not": 6,
+      "n_paired": 10,
+      "x_pages_y_does_not": 5,
       "y_pages_x_does_not": 0,
-      "p_mcnemar_exact": 0.03125
+      "p_mcnemar_exact": 0.0625
     },
     {
       "stream": "benign",
       "model_x": "google:gemini-3.5-flash-lite",
       "model_y": "google:gemini-3.6-flash",
       "n_paired": 10,
+      "x_pages_y_does_not": 5,
+      "y_pages_x_does_not": 0,
+      "p_mcnemar_exact": 0.0625
+    },
+    {
+      "stream": "benign",
+      "model_x": "google:gemma-4-26b-a4b-it",
+      "model_y": "groq:openai/gpt-oss-120b",
+      "n_paired": 11,
       "x_pages_y_does_not": 5,
       "y_pages_x_does_not": 0,
       "p_mcnemar_exact": 0.0625
@@ -483,9 +548,9 @@
     },
     {
       "stream": "benign",
-      "model_x": "google:gemini-3-flash-preview",
-      "model_y": "groq:openai/gpt-oss-120b",
-      "n_paired": 8,
+      "model_x": "google:gemini-3.1-flash-lite",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 7,
       "x_pages_y_does_not": 4,
       "y_pages_x_does_not": 0,
       "p_mcnemar_exact": 0.125
@@ -495,15 +560,6 @@
       "model_x": "google:gemini-3.5-flash",
       "model_y": "groq:openai/gpt-oss-120b",
       "n_paired": 7,
-      "x_pages_y_does_not": 4,
-      "y_pages_x_does_not": 0,
-      "p_mcnemar_exact": 0.125
-    },
-    {
-      "stream": "benign",
-      "model_x": "google:gemma-4-26b-a4b-it",
-      "model_y": "groq:openai/gpt-oss-120b",
-      "n_paired": 8,
       "x_pages_y_does_not": 4,
       "y_pages_x_does_not": 0,
       "p_mcnemar_exact": 0.125
@@ -529,11 +585,38 @@
     {
       "stream": "benign",
       "model_x": "google:gemini-3.5-flash-lite",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 7,
+      "x_pages_y_does_not": 3,
+      "y_pages_x_does_not": 0,
+      "p_mcnemar_exact": 0.25
+    },
+    {
+      "stream": "benign",
+      "model_x": "google:gemini-3.6-flash",
+      "model_y": "groq:openai/gpt-oss-120b",
+      "n_paired": 10,
+      "x_pages_y_does_not": 3,
+      "y_pages_x_does_not": 0,
+      "p_mcnemar_exact": 0.25
+    },
+    {
+      "stream": "benign",
+      "model_x": "google:gemini-3.5-flash-lite",
       "model_y": "google:gemma-4-26b-a4b-it",
       "n_paired": 12,
       "x_pages_y_does_not": 4,
       "y_pages_x_does_not": 1,
       "p_mcnemar_exact": 0.375
+    },
+    {
+      "stream": "benign",
+      "model_x": "groq:openai/gpt-oss-120b",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 21,
+      "x_pages_y_does_not": 2,
+      "y_pages_x_does_not": 5,
+      "p_mcnemar_exact": 0.453125
     },
     {
       "stream": "benign",
@@ -564,9 +647,9 @@
     },
     {
       "stream": "benign",
-      "model_x": "google:gemini-3.6-flash",
-      "model_y": "groq:openai/gpt-oss-120b",
-      "n_paired": 8,
+      "model_x": "google:gemini-3.5-flash",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 6,
       "x_pages_y_does_not": 2,
       "y_pages_x_does_not": 0,
       "p_mcnemar_exact": 0.5
@@ -585,6 +668,15 @@
       "model_x": "google:gemini-3-flash-preview",
       "model_y": "google:gemma-4-26b-a4b-it",
       "n_paired": 10,
+      "x_pages_y_does_not": 2,
+      "y_pages_x_does_not": 1,
+      "p_mcnemar_exact": 1.0
+    },
+    {
+      "stream": "benign",
+      "model_x": "google:gemini-3-flash-preview",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 7,
       "x_pages_y_does_not": 2,
       "y_pages_x_does_not": 1,
       "p_mcnemar_exact": 1.0
@@ -624,18 +716,55 @@
       "x_pages_y_does_not": 1,
       "y_pages_x_does_not": 2,
       "p_mcnemar_exact": 1.0
+    },
+    {
+      "stream": "benign",
+      "model_x": "google:gemini-3.6-flash",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 7,
+      "x_pages_y_does_not": 1,
+      "y_pages_x_does_not": 2,
+      "p_mcnemar_exact": 1.0
+    },
+    {
+      "stream": "benign",
+      "model_x": "google:gemma-4-26b-a4b-it",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 7,
+      "x_pages_y_does_not": 3,
+      "y_pages_x_does_not": 2,
+      "p_mcnemar_exact": 1.0
     }
   ],
-  "mcnemar_attack_uniform": [],
+  "mcnemar_attack_uniform": [
+    {
+      "stream": "attack",
+      "model_x": "groq:openai/gpt-oss-120b",
+      "model_y": "groq:qwen/qwen3.8-27b",
+      "n_paired": 20,
+      "x_pages_y_does_not": 4,
+      "y_pages_x_does_not": 2,
+      "p_mcnemar_exact": 0.6875
+    }
+  ],
   "eai": {
     "groq:openai/gpt-oss-120b": {
-      "n_uniform_verdicts": 21,
+      "n_uniform_verdicts": 31,
       "eai_action_idx": 1188,
       "eai_window_idx": 89,
       "eai_t_utc": "2026-07-09T10:30:00.870229Z",
       "lead_h_to_escalation_point": 55.29142493638889,
       "lead_h_to_first_rce": -6.483575063611111,
       "lead_h_to_first_exfil": 3.862037793333333
+    },
+    "groq:qwen/qwen3.8-27b": {
+      "n_uniform_verdicts": 20,
+      "eai_action_idx": 2848,
+      "eai_window_idx": 196,
+      "eai_t_utc": "2026-07-09T19:25:00.870229Z",
+      "lead_h_to_escalation_point": 46.37475826972222,
+      "lead_h_to_first_rce": -15.400241730277777,
+      "lead_h_to_first_exfil": -5.054628873333333
     }
   },
   "e3": {

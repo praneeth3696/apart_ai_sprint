@@ -36,31 +36,33 @@ is what makes the model numbers interpretable.
 | `gemini-3.7-flash` | Google | 3/5 (60%, 23–88%) | 1/4 (25%, 5–70%) | +35% | 0.524 |
 | `gemini-3.8-flash` | Google | 1/1 (100%, 21–100%) | — | — | — |
 | `gemma-4-26b-a4b-it` | Google | 11/12 (92%, 65–99%) | 7/12 (58%, 32–81%) | +33% | 0.155 |
-| `gpt-oss-120b` | Groq | 3/5 (60%, 23–88%) | 6/25 (24%, 11–43%) | +36% | 0.143 |
+| `gpt-oss-120b` | Groq | 7/11 (64%, 35–85%) | 6/33 (18%, 9–34%) | +45% | **0.008** |
+| `qwen3.8-27b` | Groq | 3/3 (100%, 44–100%) | 6/21 (29%, 14–50%) | +71% | **0.042** |
 
-Intervals are Wilson 95%. **Pooled: milestone 66/73 (90%), benign false-page
-50/92 (54%).**
+Intervals are Wilson 95%. **Pooled: milestone 73/82 (89%), benign false-page
+56/121 (46%).**
 
-Models find the incident — 90% of milestone-carrying windows produce a page —
-and they also page on **more than half of an innocent shift**. This is the E0
-result surviving contact with frontier models: `keyword_sigma`'s inability to
-separate the streams is not an artefact of it being a crude rule.
+Models find the incident — 89% of milestone-carrying windows produce a page —
+and they also page on **46% of an innocent shift**. This is the E0 result
+surviving contact with frontier models: `keyword_sigma`'s inability to separate
+the streams is not an artefact of it being a crude rule.
 
-**Significance, stated plainly: 0 of 9 models reach *p* < 0.05** on the
-milestone-versus-benign contrast at this sample size. Per-model *n* is 4–36 and
-the intervals overlap heavily. **The reportable claim is the gradient across
-models, not any individual model's separation**, and we do not dress a
-*p* = 0.057 as a result. Widening the sample is the highest-value follow-up and
-the sampling ladder makes it purely additive.
+**Significance: 2 of 10 models reach *p* < 0.05** on the milestone-versus-benign
+contrast — `gpt-oss-120b` (*p* = 0.008) and `qwen3.8-27b` (*p* = 0.042), the two
+models with the deepest benign sampling. **Eight do not**, and the two that do
+are exactly the two we could afford to sample properly: they carry *n* = 33 and
+*n* = 21 benign windows against *n* = 4–12 for the Google arm. That is a
+statement about our budget, not about those models being different in kind — so
+we report the **gradient across models** as the finding and do not dress a
+*p* = 0.057 elsewhere as a result.
 
-The gradient itself is the interesting part, and it is not monotone in
-capability. `gemini-3.1-flash-lite` scores a perfect 12/12 on milestones while
-paging on 11 of 12 benign windows — recall bought by paging on nearly
-everything, which is worth nothing operationally. `gemini-3.6-flash` (9/10
-against 40%) and `gpt-oss-120b` (3/5 against 24%) actually discriminate.
-Figure 1 puts every detector on one pair of axes; distance **above** the
-diagonal is the only thing on it worth having, and several models sit close
-to it.
+The gradient is not monotone in capability, which is the substantive point.
+`gemini-3.1-flash-lite` scores a perfect 12/12 on milestones while paging on 11
+of 12 benign windows — recall bought by paging on nearly everything, worth
+nothing operationally. At the other end `gpt-oss-120b` reaches 7/11 at an 18%
+false-page rate and `qwen3.8-27b` 3/3 at 29%. Figure 1 puts every detector on
+one pair of axes; distance **above** the diagonal is the only thing on it worth
+having, and several models sit close to it.
 
 ### 4.3 First-page latency is degenerate on this corpus (E1)
 

@@ -24,14 +24,18 @@ at temperature 0. A model that pages 40% of the time here might page 60% on a
 re-run, and we have not measured that variance.
 
 **Statistical power is the dominant limitation and it is unevenly
-distributed.** Per-cell *n* is 4–36, intervals overlap heavily, and **no model
-reaches *p* < 0.05** on stream separation. The gradient across models is the
-reportable claim; no individual model's separation is established. The Google
-arm is thinnest — free-tier caps of 10–31 requests per model per day left
-several Gemini models at *n* = 1–12, one at a single window. **Those rows are
-in the table because omitting them would be selective reporting, not because
-they support a conclusion.** The sampling ladder makes widening purely
-additive, so this is a resource limit, not a design one.
+distributed.** Per-cell *n* runs from 1 to 33 and intervals overlap heavily.
+Only **2 of 10 models reach *p* < 0.05** on stream separation, and the
+confound is ours rather than theirs: they are the two models we could sample
+most deeply (*n* = 33 and *n* = 21 benign windows, against *n* = 4–12 for the
+Google arm). **Significance here tracks sampling budget at least as much as it
+tracks model behaviour**, so the gradient across models is the reportable
+claim and no individual ranking is established. The Google arm is thinnest —
+free-tier caps of 10–31 requests per model per day left several Gemini models
+at *n* = 1–12, one at a single window. **Those rows are in the table because
+omitting them would be selective reporting, not because they support a
+conclusion.** The sampling ladder makes widening purely additive, so this is a
+resource limit, not a design one.
 
 **Three E3 moments are unscoreable and they are not randomly distributed.**
 `gpt-oss-20b` exhausted its whole token budget on reasoning for moments 19, 23

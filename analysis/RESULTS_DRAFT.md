@@ -4,7 +4,7 @@
 
 # Results — DRAFT
 
-Generated 2026-09-12T11:44:25+00:00 from `runs/e1/live/e1_decisions.jsonl` (194 settled records).
+Generated 2026-09-12T14:22:12+00:00 from `runs/e1/live/e1_decisions.jsonl` (270 settled records).
 
 ## R0. What the denominators are
 
@@ -60,16 +60,17 @@ rule that keeps a low false-page rate, `volume_spike`, catches **1 of 12** miles
 | `gemini-3.7-flash` | Google AI Studio | 3/5 (60%, CI95 23%–88%) | 1/4 (25%, CI95 5%–70%) | +35% | 0.524 |
 | `gemini-3.8-flash` | Google AI Studio | 1/1 (100%, CI95 21%–100%) | — | — | — |
 | `gemma-4-26b-a4b-it` | Google AI Studio | 11/12 (92%, CI95 65%–99%) | 7/12 (58%, CI95 32%–81%) | +33% | 0.155 |
-| `gpt-oss-120b` | Groq | 3/5 (60%, CI95 23%–88%) | 6/25 (24%, CI95 11%–43%) | +36% | 0.143 |
+| `gpt-oss-120b` | Groq | 7/11 (64%, CI95 35%–85%) | 6/33 (18%, CI95 9%–34%) | +45% | 0.008 |
+| `qwen3.8-27b` | Groq | 3/3 (100%, CI95 44%–100%) | 6/21 (29%, CI95 14%–50%) | +71% | 0.042 |
 
-**Pooled across models: milestone 66/73 (90%), benign false-page 50/92 (54%).**
+**Pooled across models: milestone 73/82 (89%), benign false-page 56/121 (46%).**
 
 Models catch the incident and also page on a large fraction of
 innocent traffic. This reproduces on frontier models the E0 result
 that the two deployable rule detectors cannot separate the streams.
 
-**Significance, stated plainly: 0 of 9 models reach p < 0.05** on milestone-vs-benign separation
-at this sample size — none.
+**Significance, stated plainly: 2 of 10 models reach p < 0.05** on milestone-vs-benign separation
+at this sample size (gpt-oss-120b, qwen3.8-27b).
 Per-model n is 4–36 and the intervals overlap heavily. The reportable
 claim is the **gradient across models**, not any individual model's
 significance. Widening the sample is the single highest-value
@@ -86,6 +87,7 @@ completeness (Figure 2); the headline pair is R3's.
 | model | EAI action | lead to escalation point |
 |---|---|---|
 | `gpt-oss-120b` | 1188 | +55.3 h |
+| `qwen3.8-27b` | 2848 | +46.4 h |
 
 ## R5. Incoherence (E3)
 

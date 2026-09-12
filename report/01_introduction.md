@@ -22,16 +22,17 @@ Nine models across two providers, at a total cost of **$0.00**.
 **Two findings, and the second is the one we did not expect.**
 
 **Models catch the incident, and page on the control almost as readily.**
-Across the roster, 90% of milestone-carrying attack windows produce a page
-(66/73) — and so do **54% of windows in an innocent shift** (50/92). A
+Across the roster, 89% of milestone-carrying attack windows produce a page
+(73/82) — and so do **46% of windows in an innocent shift** (56/121). A
 15-line keyword rule shows the same pattern (67% against 28%), so this is not
 a matter of models being crude; it is that the discriminating signal in this
 corpus is thin, and recall bought by paging on everything is worth nothing.
-The spread across models matters more than any single model's number: the
-best discriminators sit at 40% and 24% false-page rates while the worst pages
-on 11 of 12 benign windows for a perfect 12/12 recall. **No model reaches
-statistical significance on stream separation at our sample sizes**, and we
-say so rather than promoting a *p* = 0.057.
+The spread across models matters more than any single model's number: the best
+discriminators reach 18% and 29% false-page rates while the worst pages on 11
+of 12 benign windows for a perfect 12/12 recall. **Only 2 of 10 models separate
+the streams significantly — and they are precisely the two we could afford to
+sample deeply**, which makes the roster-wide gradient, not any single model's
+*p*-value, the claim we stand behind.
 
 **The failure mode is under-escalation, not refusal.** We expected the
 safety-relevant risk to be a model that declines to engage with intrusion
