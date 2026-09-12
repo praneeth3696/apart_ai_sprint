@@ -1,8 +1,8 @@
 # HF-Replay-Recon — a replayable scaffold for the July 2026 agent intrusion
 
-**Status: pre-sprint (2026-09-10).** Corpus machinery, the Wed-9 smoke test and
-the non-LLM rule baselines are done; the full runs happen during the sprint
-(Fri 11 – Sun 13 Sep).
+**Status: sprint day 1 (2026-09-11).** The full 17,613-action attack stream and
+its matched benign control are built and asserted, and the non-LLM rule
+baselines (E0) run on both. The model runs — E1/E2/E3 — are still ahead.
 
 **Start here:** [`SPRINT_PLAN.md`](SPRINT_PLAN.md) is the execution plan (roles,
 hour-by-hour, run sizing). [`PRIMER.md`](PRIMER.md) is the background doc — the
@@ -140,13 +140,18 @@ results are single-run, text-only, and mediated by OpenRouter.
 
 ---
 
-## Known gaps before the sprint
+## Known gaps
 
-- 9 of 10 phase template banks unwritten (only `k8s` exists)
-- Benign baseline stream not built — this is the false-page control, and the
-  headline now depends on it. **E0 already runs and is not interpretable until
-  this exists**, which is the clearest statement of how load-bearing it is.
-- `build_corpus.py` (all-phase merge, global `action_idx`) not written
+The three corpus gaps listed here before the sprint are now closed: all 10
+template banks are written, `build_corpus.py` merges them into a 17,613-action
+`attack_stream.jsonl`, and `benign_stream.jsonl` is the matched false-page
+control. What remains:
+
+- **E1 is not built.** `harness/e1_escalation.py` does not exist yet. It is the
+  headline experiment and Friday's exit condition.
+- **The benign control is not validated yet.** The blind separability check is
+  built and awaiting a score. Until it lands, the false-page denominator rests
+  on an assumption nobody has tested.
 - **Free-tier daily request cap is unmeasured**, and it — not money — sizes the
   whole E1 run. `harness/measure_limits.py` gets the number; nothing downstream
   should be sized until it has. See `SPRINT_PLAN.md` §0.3.
