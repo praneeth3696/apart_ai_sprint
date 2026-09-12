@@ -345,6 +345,14 @@ within one family on one serving stack. And a model is not a model — it is a
 model *as served by someone* — so the provider is reported beside every model
 ID.
 
+**Two accounts, disclosed.** The Google arm was collected on two separate free
+tiers: one per author, each on their own Google AI Studio project and API key.
+Google meters the free tier per project per model per day, so these are two
+independent quotas rather than one quota circumvented — the same arrangement as
+two researchers each running their own laptop. No paid tier, no shared or
+secondary accounts, and no key was used beyond its own published free limit.
+Total spend across the study is $0.00.
+
 ### 3.8 Statistics
 
 Wilson score intervals throughout, because the rates sit near 0 and 1 where the
