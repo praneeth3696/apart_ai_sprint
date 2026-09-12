@@ -38,7 +38,7 @@ So we rebuilt the incident as a replayable 17,613-action stream from the
 published figures, generated a size-matched benign stream from the same
 marginal distributions, verified blind that the two are not trivially
 separable, and ran both past the same models under the same monitor prompt.
-Nine models across two providers, at a total cost of **$0.00**.
+Ten models across two providers, at a total cost of **$0.00**.
 
 **Two findings, and the second is the one we did not expect.**
 
@@ -222,8 +222,16 @@ with no intrusion in it. The control converts "the model paged" into "the model
 paged *selectively*"; without it a page rate is uninterpretable.
 
 Both streams are cut into 5-minute windows — 1,278 attack, 1,280 control.
-Twelve attack windows carry a sourced milestone; the control carries none by
-construction. Models see only a projection of each action (index, timestamp,
+Twelve attack windows carry a milestone; the control carries none by
+construction. **"Milestone" does not mean "published timestamp" for all twelve**,
+and `corpus/CITATIONS.md` §5 grades each one: six are read off a published table
+in HF or OpenAI's report; five have a bounded or estimated time, where the source
+fixes the event but not the minute ("shortly before midnight on July 11", "early
+on July 12", "in under 13 hours"); and one, `supply_chain_token_mint`, is
+**unreconciled** — HF's account puts it on 07-12 and OpenAI's on 07-13, and we
+have not resolved which is right. The milestone *set* is sourced; six of the
+twelve *timestamps* are interpolated within published bounds, and the escalation
+point is one of them (PREREGISTRATION §4). Models see only a projection of each action (index, timestamp,
 host role, actor, event text); the ground-truth block is asserted out of every
 prompt at runtime, since those labels are exactly what we are measuring the
 model's ability to notice.
