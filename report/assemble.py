@@ -61,14 +61,30 @@ def main() -> int:
     print("-" * 58)
     print(f"{'TOTAL (text)':<32} {total:>7} {total / WORDS_PER_PAGE:>7.1f} "
           f"{total / WORDS_PER_PAGE_DENSE:>7.1f}")
-    lo = total / WORDS_PER_PAGE_DENSE + FIGURE_PAGES
-    hi = total / WORDS_PER_PAGE + FIGURE_PAGES
-    print(f"{'+ figures':<32} {'':>7} {hi:>7.1f} {lo:>7.1f}")
+    appendix = dict(rows).get("05_limitations_dualuse.md", 0)
+    body = total - appendix
+
+    def span(w):
+        return (w / WORDS_PER_PAGE_DENSE + FIGURE_PAGES,
+                w / WORDS_PER_PAGE + FIGURE_PAGES)
+
+    lo_all, hi_all = span(total)
+    lo_body, hi_body = span(body)
+    print(f"{'+ figures':<32} {'':>7} {hi_all:>7.1f} {lo_all:>7.1f}")
     print()
-    print(f"8-page limit: {'OK in both' if hi <= 8 else ('OK if two-column' if lo <= 8 else 'OVER in both — cut')}"
-          f"  (estimate {lo:.1f}-{hi:.1f} pages)")
-    print("  The official template is unpublished; confirm whether the required")
-    print("  appendix counts toward the 8 pages when it lands.")
+    print("The 8-page limit turns on one unknown: the guidelines list the")
+    print("Limitations and Dual-Use appendix as a SEPARATE required deliverable,")
+    print("so it may well sit outside the page count. Both readings:")
+    print()
+    for label, (lo, hi) in (("including the appendix", (lo_all, hi_all)),
+                            ("body only (appendix separate)", (lo_body, hi_body))):
+        verdict = ("fits either way" if hi <= 8 else
+                   "fits if two-column" if lo <= 8 else "OVER in both — cut")
+        print(f"  {label:<32} {lo:>4.1f}-{hi:<4.1f} pages   {verdict}")
+    print()
+    print("  Confirm against the official template when it is published.")
+    print("  Cut order if needed is in report/README.md; the appendix is scored,")
+    print("  so cut it last.")
     print(f"\nwrote {out.relative_to(HERE.parent)}")
     return 0
 

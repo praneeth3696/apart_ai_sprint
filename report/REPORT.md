@@ -72,16 +72,13 @@ detail and not think it worth waking anyone over. The risk in an AI-assisted
 SOC is not the model that won't talk about the incident — it is the model that
 talks about it fluently while the pager stays silent.
 
-**Contributions.** (i) A replayable, generated reconstruction of a real 2026
-agent intrusion with a validated matched control, released with the harness.
-(ii) A metric pair — milestone-window hit rate against benign false-page rate —
-that replaces first-page latency, which we show is degenerate on this corpus
-because every detector fires within the first 50 of 17,613 actions. (iii)
-Non-LLM rule baselines on the same axes, so the model numbers are
-interpretable. (iv) The two-frame incoherence test at K=24, returning a
-pre-registered null and an unexpected significant asymmetry. (v) A full
-account of what a $0 budget actually constrains, which turned out to be
-throughput and not price.
+**Contributions.** A replayable reconstruction of a real 2026 agent intrusion
+with a validated matched control, released with the harness; a metric pair —
+milestone hit rate against benign false-page rate — replacing a first-page
+latency we show is degenerate here; non-LLM rule baselines on the same axes, so
+the model numbers are interpretable at all; and the two-frame incoherence test
+at K=24, which returns its pre-registered null and an unexpected significant
+asymmetry.
 
 ---
 
@@ -160,12 +157,11 @@ asserts at build time that each defined milestone is placed. It covers **17,613
 attacker actions** between 2026-07-09 02:28 and 2026-07-13 14:14 UTC.
 
 One source discrepancy is inherited rather than smoothed over: the published
-phase and daily-volume tables disagree (16,521 vs 17,613 actions). We take the
-daily-volume total as authoritative — it matches the source's own "~17,600"
-headline to within 13 actions — and carry the 1,092-action remainder as an
-explicit `unclassified` residual. Exfiltration is **56 actions (0.3%)**: a
-needle-in-haystack problem, so any method that works by noticing volume spikes
-has been handed the wrong task.
+phase and daily-volume tables disagree (16,521 vs 17,613). We take the
+daily-volume total, which matches the source's own "~17,600" headline to within
+13 actions, and carry the 1,092-action remainder as an explicit `unclassified`
+residual. Exfiltration is **56 actions (0.3%)** — a needle-in-haystack problem,
+so any method working by volume spike has the wrong task.
 
 Every experiment runs against **two streams**: the attack stream and a
 size-matched **benign control** from the same generator and the same marginals,
@@ -390,6 +386,27 @@ decline to headline it; the metric pair in §4.2 replaces it. This
 reprioritisation is logged as a pre-registration amendment, and both metrics
 are reported for every model, so nothing is hidden by the ordering.
 
+**The pre-registered negative-lead-time result.** We committed in advance to
+reporting this whichever way it came out, because it is unflattering to the
+whole framing of escalation latency. The ground-truth escalation point — the
+first sourced pivotal milestone, action #10,498 at 2026-07-11 17:47:30 UTC —
+falls **51.4 hours *after* the first exfiltration action** (#1,894, 07-09
+14:21). Exfiltration is not the thing a perfectly-calibrated detector gets
+ahead of on this incident; by the time the escalation criterion is satisfiable
+at all, data has been leaving for more than two days.
+
+Lead time to admin/host-level access is **+10.0 h**, so the criterion is not
+useless — it is early for the privilege-escalation milestone and hopelessly
+late for the exfiltration one. This is a property of the published phase
+windows rather than a defect in the rule, and we declined to reselect a rule
+that produces a prettier number.
+
+The two facts in this section compound rather than cancel. The rule that
+*should* fire is already 51 hours too late for exfiltration; the detectors that
+beat it to the punch do so only by firing on action #15 of 17,613, on filler
+identical in both streams. **Neither "page early" nor "page correctly" is
+achieved by anything we measured.**
+
 ### 4.4 The incoherence test returns its pre-registered null (E3)
 
 | model | incoherence | escalated | refused to assist | McNemar *p* |
@@ -436,15 +453,12 @@ throughput, not price: 10–31 requests per model per day on Google AI Studio,
 
 ## 5. Discussion
 
-**Recall is the easy half.** Ten models, two providers, three rule baselines,
-and almost everything finds the incident. What separates them is selectivity,
-and the spread is large and not monotone in capability: a flash-lite model buys
-12/12 recall by paging on 11 of 12 benign windows, while `gpt-oss-120b` reaches
-7/11 at an 18% false-page rate. **Deploying on recall alone would select the
-worst detector in the roster.** Note also which models cleared significance —
-the two with the deepest benign sampling, not the two most capable. Sampling
-depth and selectivity are confounded here, and we say so rather than reading a
-capability story into it.
+**Recall is the easy half**, and selectivity is where the roster separates —
+not monotonically in capability. **Deploying on recall alone would select the
+worst detector here.** Note also which models cleared significance: the two
+with the deepest benign sampling, not the two most capable. Sampling depth and
+selectivity are confounded, and we say so rather than reading a capability
+story into it.
 
 **The metric you pick decides the answer.** First-page latency — the obvious
 metric, and the one we pre-registered — is degenerate here: every detector,

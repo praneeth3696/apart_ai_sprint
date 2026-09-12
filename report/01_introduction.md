@@ -51,16 +51,13 @@ detail and not think it worth waking anyone over. The risk in an AI-assisted
 SOC is not the model that won't talk about the incident — it is the model that
 talks about it fluently while the pager stays silent.
 
-**Contributions.** (i) A replayable, generated reconstruction of a real 2026
-agent intrusion with a validated matched control, released with the harness.
-(ii) A metric pair — milestone-window hit rate against benign false-page rate —
-that replaces first-page latency, which we show is degenerate on this corpus
-because every detector fires within the first 50 of 17,613 actions. (iii)
-Non-LLM rule baselines on the same axes, so the model numbers are
-interpretable. (iv) The two-frame incoherence test at K=24, returning a
-pre-registered null and an unexpected significant asymmetry. (v) A full
-account of what a $0 budget actually constrains, which turned out to be
-throughput and not price.
+**Contributions.** A replayable reconstruction of a real 2026 agent intrusion
+with a validated matched control, released with the harness; a metric pair —
+milestone hit rate against benign false-page rate — replacing a first-page
+latency we show is degenerate here; non-LLM rule baselines on the same axes, so
+the model numbers are interpretable at all; and the two-frame incoherence test
+at K=24, which returns its pre-registered null and an unexpected significant
+asymmetry.
 
 ---
 

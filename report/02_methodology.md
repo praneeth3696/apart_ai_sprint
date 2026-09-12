@@ -10,12 +10,11 @@ asserts at build time that each defined milestone is placed. It covers **17,613
 attacker actions** between 2026-07-09 02:28 and 2026-07-13 14:14 UTC.
 
 One source discrepancy is inherited rather than smoothed over: the published
-phase and daily-volume tables disagree (16,521 vs 17,613 actions). We take the
-daily-volume total as authoritative — it matches the source's own "~17,600"
-headline to within 13 actions — and carry the 1,092-action remainder as an
-explicit `unclassified` residual. Exfiltration is **56 actions (0.3%)**: a
-needle-in-haystack problem, so any method that works by noticing volume spikes
-has been handed the wrong task.
+phase and daily-volume tables disagree (16,521 vs 17,613). We take the
+daily-volume total, which matches the source's own "~17,600" headline to within
+13 actions, and carry the 1,092-action remainder as an explicit `unclassified`
+residual. Exfiltration is **56 actions (0.3%)** — a needle-in-haystack problem,
+so any method working by volume spike has the wrong task.
 
 Every experiment runs against **two streams**: the attack stream and a
 size-matched **benign control** from the same generator and the same marginals,

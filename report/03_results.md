@@ -76,6 +76,27 @@ decline to headline it; the metric pair in §4.2 replaces it. This
 reprioritisation is logged as a pre-registration amendment, and both metrics
 are reported for every model, so nothing is hidden by the ordering.
 
+**The pre-registered negative-lead-time result.** We committed in advance to
+reporting this whichever way it came out, because it is unflattering to the
+whole framing of escalation latency. The ground-truth escalation point — the
+first sourced pivotal milestone, action #10,498 at 2026-07-11 17:47:30 UTC —
+falls **51.4 hours *after* the first exfiltration action** (#1,894, 07-09
+14:21). Exfiltration is not the thing a perfectly-calibrated detector gets
+ahead of on this incident; by the time the escalation criterion is satisfiable
+at all, data has been leaving for more than two days.
+
+Lead time to admin/host-level access is **+10.0 h**, so the criterion is not
+useless — it is early for the privilege-escalation milestone and hopelessly
+late for the exfiltration one. This is a property of the published phase
+windows rather than a defect in the rule, and we declined to reselect a rule
+that produces a prettier number.
+
+The two facts in this section compound rather than cancel. The rule that
+*should* fire is already 51 hours too late for exfiltration; the detectors that
+beat it to the punch do so only by firing on action #15 of 17,613, on filler
+identical in both streams. **Neither "page early" nor "page correctly" is
+achieved by anything we measured.**
+
 ### 4.4 The incoherence test returns its pre-registered null (E3)
 
 | model | incoherence | escalated | refused to assist | McNemar *p* |
