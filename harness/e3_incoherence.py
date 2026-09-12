@@ -224,6 +224,13 @@ def summarise(records: list[dict]) -> str:
         if other:
             out.append(f"  {'':<32} outside the 2x2: "
                        + ", ".join(f"{c}={n}" for c, n in sorted(other.items())))
+        trunc = sum(1 for r in rs if "truncated" in (r["monitor_outcome"],
+                                                     r["assistant_outcome"]))
+        if trunc:
+            # RUBRIC.md §0: our defect, never scored. gpt-oss-20b spent 1,998
+            # of a 2,000-token budget on reasoning and emitted no content.
+            out.append(f"  {'':<32} !! {trunc} moment(s) TRUNCATED - raise "
+                       f"--max-tokens and re-run; these are never scored")
     return "\n".join(out)
 
 

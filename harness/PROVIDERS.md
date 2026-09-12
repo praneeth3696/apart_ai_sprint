@@ -130,6 +130,30 @@ the endpoint attaches to `/chat/completions` (it attaches none to `/models`).
 | `meta-llama/llama-prompt-guard-2-*` | — | — | — | Prompt-injection classifiers, not chat models. |
 | `openai/gpt-oss-safeguard-20b` | — | — | — | A **safety classifier**. Not an E1 monitor, but directly relevant to `harness/safety_classifier_contrast.py` if that thread is picked back up. |
 
+### The reasoning-token trap — size `--max-tokens` before you run
+
+Measured 2026-09-12 on the E3 frames at `--max-tokens 2000`:
+
+| model | calls that hit the token ceiling | reasoning tokens before any content |
+|---|---|---|
+| `openai/gpt-oss-20b` | 13 / 24 | **1,998 of a 2,000 budget** — zero content tokens |
+| `openai/gpt-oss-120b` | 24 / 48 | partial content, still scoreable |
+
+`gpt-oss-20b` spent its ENTIRE budget reasoning and returned empty content
+with `finish_reason=length`. `RUBRIC.md` §0 classifies that as `truncated` —
+**our defect, never scored** — and requires a re-run at a larger budget. It is
+the same failure the rubric already records for GLM-5.2 (524 reasoning tokens
+before its first content token), an order of magnitude worse.
+
+Note the direction: the **smaller** model burned more reasoning budget than the
+larger one. Do not size the budget from the model's parameter count.
+
+`usage.completion_tokens_details.reasoning_tokens` is where Groq reports this.
+Budget must exceed `reasoning_tokens + expected content`; **6,000 was enough
+here**. The interaction with the TPM ceiling is the sting — a 6,000-token
+completion is most of one minute's allowance, so a reasoning model costs
+roughly five times the wall-clock of a non-reasoning one per call.
+
 **The binding limit is tokens, not requests.** 8,000 TPM against an E1 prompt
 of ~1,600 tokens is about **5 requests/minute** — so the 1,000/day cap is
 never reached in practice and wall-clock is what rations the run. Set

@@ -529,6 +529,12 @@ def summarise(records: list[dict]) -> str:
         if bad:
             out.append(f"  {'':<28} {'':<7} non-verdicts: "
                        + ", ".join(f"{k}={v}" for k, v in sorted(bad.items())))
+        if bad.get("truncated"):
+            # RUBRIC.md §0: truncated is OUR defect, not a model behaviour, and
+            # it is never scored. Silently tallying it would leave a run that
+            # spent its quota producing unscoreable rows looking healthy.
+            out.append(f"  {'':<28} {'':<7} !! {bad['truncated']} TRUNCATED - "
+                       f"raise --max-tokens and re-run; these are never scored")
     return "\n".join(out)
 
 
