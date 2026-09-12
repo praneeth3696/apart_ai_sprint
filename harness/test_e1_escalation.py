@@ -94,18 +94,85 @@ def _fake_windows(n=100, milestones=(11, 40, 77)):
 
 def test_stratified_takes_every_milestone_window():
     w = _fake_windows()
-    sel = e1.select_windows(w, "stratified", 20)
-    by = dict(sel)
+    by = dict(e1.select_windows(w, "stratified", 12))
     for i in (11, 40, 77):
-        assert by[i] == "milestone"
-    assert len(sel) == 20
+        assert by[i] in ("milestone", "stride+milestone")
 
 
-def test_stratified_never_exceeds_the_budget():
-    """Milestones are taken first; the stride fill shrinks to make room. A run
-    sized for the free tier must not quietly overshoot it."""
-    w = _fake_windows(milestones=tuple(range(10)))
-    assert len(e1.select_windows(w, "stratified", 12)) == 12
+def test_a_window_in_both_samples_is_labelled_as_both():
+    """The census and the uniform sample DO collide - attack window 586 is a
+    real example. Relabelling it as milestone-only would quietly delete a
+    member of the uniform sample and bias the stride rate."""
+    w = _fake_windows(100, milestones=())
+    stride = [i for i, _ in e1.select_windows(w, "stride", 12)]
+    w[stride[3]]["_gt"]["contains_milestone"] = True
+    by = dict(e1.select_windows(w, "stratified", 12))
+    assert by[stride[3]] == "stride+milestone"
+    # and it must still be counted in both populations
+    uniform = {i for i, why in by.items() if why.startswith("stride")}
+    census = {i for i, why in by.items() if why.endswith("milestone")}
+    assert stride[3] in uniform and stride[3] in census
+
+
+def test_milestones_are_added_on_top_not_taken_out_of_the_stride_budget():
+    """--windows sizes the STRIDE sample. If milestones ate into it, the
+    uniform benign sample and the uniform attack sample would be different
+    sizes and could not be compared."""
+    w = _fake_windows(200, milestones=(3, 7, 11, 15, 19))
+    strat = e1.select_windows(w, "stratified", 12)
+    stride = e1.select_windows(w, "stride", 12)
+    assert sum(1 for _, why in strat if why.startswith("stride")) == len(stride)
+
+
+def test_windows_snaps_down_to_a_rung_never_up():
+    """Snapping up would let a widened run silently cost more quota than the
+    operator asked for."""
+    assert e1.ladder_rung(60) == 36
+    assert e1.ladder_rung(40) == 36
+    assert e1.ladder_rung(12) == 12
+    assert e1.ladder_rung(5) == 12          # floor: never below the base rung
+    assert e1.ladder_rung(10_000) == e1.STRIDE_LADDER[-1]
+
+
+def test_every_rung_is_an_odd_multiple_of_the_one_below():
+    """This is the whole nesting guarantee. The midpoint-offset stride at n and
+    n' shares positions only when n'/n is an odd integer - at an EVEN multiple
+    the two samples are disjoint."""
+    for lo, hi in zip(e1.STRIDE_LADDER, e1.STRIDE_LADDER[1:]):
+        assert hi % lo == 0, (lo, hi)
+        assert (hi // lo) % 2 == 1, (lo, hi)
+
+
+@pytest.mark.parametrize("stream", ["attack", "benign"])
+def test_the_ladder_is_nested_on_the_real_streams(stream):
+    """Widening a run must never orphan a window an earlier run paid for.
+
+    Regression test for a live near-miss: on 2026-09-12 the first E1 pass ran
+    at n=12, and the obvious widening to n=40 would have shared NOT ONE of the
+    benign stream's twelve windows - stranding the whole Google false-page
+    denominator outside the analysis set.
+    """
+    path = REPO / "corpus" / "windows" / f"{stream}_windows.json"
+    windows = json.loads(path.read_text(encoding="utf-8"))
+    prev: set[int] = set()
+    for rung in e1.STRIDE_LADDER:
+        cur = {i for i, _ in e1.select_windows(windows, "stratified", rung)}
+        assert prev <= cur, f"{stream}: rung {rung} orphans {len(prev - cur)} windows"
+        prev = cur
+
+
+@pytest.mark.parametrize("stream", ["attack", "benign"])
+def test_the_first_live_run_survives_every_future_widening(stream):
+    """The windows already paid for on 2026-09-12, pinned. If a change to the
+    sampler would strand them, this fails before any quota is spent."""
+    windows = json.loads((REPO / "corpus" / "windows" /
+                          f"{stream}_windows.json").read_text(encoding="utf-8"))
+    first_pass = {windows[i]["window_idx"]
+                  for i, _ in e1.select_windows(windows, "stratified", 12)}
+    for rung in e1.STRIDE_LADDER:
+        later = {windows[i]["window_idx"]
+                 for i, _ in e1.select_windows(windows, "stratified", rung)}
+        assert first_pass <= later, f"{stream}: rung {rung} strands paid-for windows"
 
 
 def test_selection_is_ordered_and_deterministic():

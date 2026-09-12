@@ -178,49 +178,83 @@ class RollingSummary:
 # ---------------------------------------------------------------------------
 # Window selection
 # ---------------------------------------------------------------------------
+# The nested sampling ladder.
+#
+# Widening a run must never orphan the windows an earlier, narrower run
+# already paid for. That is not automatic: the midpoint-offset stride at n and
+# at n' share no positions unless n'/n is an ODD integer. Empirically, on the
+# 1,280-window benign stream, a first pass at n=12 followed by n=40 loses ALL
+# TWELVE of the first pass's windows - which on 2026-09-12 would have stranded
+# the entire Google false-page denominator outside the analysis set.
+#
+# So the rungs are fixed, and each is 3x the one below it. Any rung is a strict
+# superset of every rung beneath it, `test_the_ladder_is_nested` proves it on
+# the real streams, and `--windows` snaps DOWN to a rung (down, so a widened
+# run can never silently cost more quota than asked for).
+STRIDE_LADDER = (12, 36, 108, 324, 972)
+
+
+def ladder_rung(n: int) -> int:
+    """The largest rung <= n, or the smallest rung if n is below the ladder."""
+    usable = [r for r in STRIDE_LADDER if r <= n]
+    return usable[-1] if usable else STRIDE_LADDER[0]
+
+
+def _stride_positions(total: int, k: int) -> list[int]:
+    """k evenly spaced positions, midpoint-offset so the sample does not cling
+    to index 0. Deterministic - no seed, no sampler to re-run."""
+    out, seen = [], set()
+    for j in range(k):
+        i = min(int((j + 0.5) * total / k), total - 1)
+        if i not in seen:
+            seen.add(i)
+            out.append(i)
+    return out
+
+
 def select_windows(windows: list[dict], mode: str, n: int) -> list[tuple[int, str]]:
     """Return [(list_position, why_selected)] in stream order.
 
-    Deterministic - no seed, no sampler to re-run. Modes:
+    Modes:
 
       all         every window.
       head        the first n. Debugging only; it never reaches the incident.
-      stride      n evenly spaced across the stream. Unbiased, order-preserving,
-                  and the right sample for the benign false-page rate.
-      stratified  every milestone-carrying window, plus a stride fill to n.
-                  (default)
+      stride      a uniform ladder sample. The right sample for the benign
+                  false-page rate.
+      stratified  that same uniform sample, PLUS every milestone-carrying
+                  window. (default)
 
-    Why `stratified` is the default: only 12 of the attack stream's 1,278
-    windows carry a milestone. A 50-window uniform sample expects to catch 0.5
-    of them, so the milestone hit rate - the metric HANDOFF 5 proposes as the
-    headline - would be unmeasurable. Taking all 12 makes it a census.
+    `--windows n` sizes the STRIDE sample; under `stratified` the milestone
+    windows are added on top rather than eating into it. Only 12 of the attack
+    stream's 1,278 windows carry a milestone, so a uniform sample expects to
+    catch a fraction of one and the milestone hit rate - the metric HANDOFF §5
+    proposes as the headline - would be unmeasurable. Taking all 12 makes it a
+    census.
 
-    The cost is that the attack sample is then NOT uniform, so a pooled "page
-    rate over the attack sample" is biased upward. Every record carries
-    `selected_by`, and the manifest carries the counts, so analysis must slice
-    on it rather than pool. The benign stream has no milestone windows at all,
-    so there `stratified` degenerates to `stride` and the false-page
-    denominator stays uniform.
+    `selected_by` therefore has three values, and analysis must respect them:
+
+      stride            in the uniform sample only
+      milestone         in the census only
+      stride+milestone  in BOTH (the two do collide - e.g. attack window 586)
+
+    The uniform sample is {stride, stride+milestone}; the census is
+    {milestone, stride+milestone}. Pooling all three as one "attack page rate"
+    is biased upward, because the census over-represents high-severity
+    windows by construction. The benign stream carries no milestone windows,
+    so its false-page denominator stays uniform under either mode.
     """
     total = len(windows)
     if mode == "all" or n >= total:
         return [(i, "all") for i in range(total)]
     if mode == "head":
-        return [(i, "head") for i in range(n)]
+        return [(i, "head") for i in range(min(n, total))]
 
-    forced: dict[int, str] = {}
+    chosen: dict[int, str] = {i: "stride"
+                              for i in _stride_positions(total, ladder_rung(n))}
     if mode == "stratified":
-        forced = {i: "milestone" for i, w in enumerate(windows)
-                  if w["_gt"]["contains_milestone"]}
-
-    n_stride = max(n - len(forced), 0)
-    chosen = dict(forced)
-    if n_stride:
-        # Evenly spaced positions over the whole stream, midpoint-offset so the
-        # sample does not cling to index 0.
-        for j in range(n_stride):
-            i = min(int((j + 0.5) * total / n_stride), total - 1)
-            chosen.setdefault(i, "stride")
+        for i, w in enumerate(windows):
+            if w["_gt"]["contains_milestone"]:
+                chosen[i] = "stride+milestone" if i in chosen else "milestone"
     return [(i, chosen[i]) for i in sorted(chosen)]
 
 
@@ -557,7 +591,11 @@ def main(argv: list[str]) -> int:
     print(f"E1 escalation  {datetime.now(timezone.utc).isoformat()}")
     print(f"  models   : {', '.join(models)}")
     print(f"  streams  : {', '.join(streams)}")
-    print(f"  select   : {args.select} (n={args.windows} per stream)")
+    rung = ladder_rung(args.windows)
+    snap = "" if rung == args.windows else f" [snapped down from {args.windows}]"
+    print(f"  select   : {args.select}, stride rung {rung}{snap}"
+          if args.select in ("stride", "stratified")
+          else f"  select   : {args.select} (n={args.windows})")
     print(f"  provider : {'MOCK - no network, no quota' if args.dry_run else 'live'}")
     print(f"  out      : {_rel(out_path)}"
           + (f"  (resuming, {len(done)} settled)" if done else ""))
@@ -655,6 +693,8 @@ def main(argv: list[str]) -> int:
         "streams": streams,
         "select": args.select,
         "windows_requested": args.windows,
+        "stride_rung": ladder_rung(args.windows),
+        "stride_ladder": list(STRIDE_LADDER),
         "max_tokens": args.max_tokens,
         "rpm": args.rpm,
         "api_calls_this_run": n_calls,

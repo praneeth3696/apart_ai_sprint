@@ -57,6 +57,15 @@ ANTHROPIC_VERSION = "2023-06-01"
 # docstring - keep both paths so the comparison stays runnable.
 ANTHROPIC_PREFIX = "anthropic:"
 
+# Identify ourselves on every request.
+#
+# Not politeness - a requirement. Groq sits behind Cloudflare, which rejects
+# urllib's default "Python-urllib/3.x" signature with HTTP 403 and a bare
+# "error code: 1010" body that names neither the cause nor the fix, and looks
+# exactly like a bad API key. Measured 2026-09-12.
+USER_AGENT = ("apart-ai-incident-response-sprint/1.0 "
+              "(+https://github.com/praneeth3696/apart_ai_sprint)")
+
 # ---------------------------------------------------------------------------
 # Direct providers. All OpenAI-compatible: the only thing that changes is the
 # base URL and where the key comes from, which is why this is a table and not
@@ -219,7 +228,8 @@ def available_providers() -> dict[str, bool]:
 
 
 def _post_json(url: str, body: bytes, headers: dict, timeout: int) -> dict:
-    req = urllib.request.Request(url, data=body, headers=headers)
+    req = urllib.request.Request(url, data=body,
+                                 headers={"User-Agent": USER_AGENT, **headers})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.load(r)
 
