@@ -17,7 +17,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 ORDER = [
     "00_abstract.md",
     "01_introduction.md",
-    "06_related_work_STUB.md",
+    "06_related_work.md",
     "02_methodology.md",
     "03_results.md",
     "04_discussion.md",

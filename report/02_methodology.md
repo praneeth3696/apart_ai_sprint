@@ -5,10 +5,9 @@
 We reconstruct the July 2026 Hugging Face agent intrusion from its published
 technical timeline [1] as a replayable action stream. The corpus is
 **generated, not hand-written**: every count, phase boundary and milestone
-timestamp is read from a single machine-readable ground-truth file, and the
-generator asserts at build time that each defined milestone is actually placed.
-The reconstruction covers **17,613 attacker actions** between 2026-07-09 02:28
-UTC and 2026-07-13 14:14 UTC.
+timestamp comes from one machine-readable ground-truth file, and the generator
+asserts at build time that each defined milestone is placed. It covers **17,613
+attacker actions** between 2026-07-09 02:28 and 2026-07-13 14:14 UTC.
 
 One source discrepancy is inherited rather than smoothed over: the published
 phase and daily-volume tables disagree (16,521 vs 17,613 actions). We take the
@@ -50,9 +49,7 @@ defensible.
 ### 3.3 E0 — non-LLM rule baselines
 
 Three detectors run over identical streams, windowing and ground truth, at zero
-API cost. Without them, "model X pages at a 40% false-page rate" gives a reader
-nothing to compare against.
-
+API cost; without them a model's page rate has nothing to compare against.
 `volume_spike` and `keyword_sigma` see **only** the projection a model under
 evaluation sees. `sev_threshold` deliberately breaks that rule and reads
 ground-truth severity: **it is an ORACLE — the upper bound for a detector that

@@ -14,44 +14,57 @@ python report/assemble.py
 |---|---|---|
 | `00_abstract.md` | B | **done** — 145 words against the 150-word limit |
 | `01_introduction.md` | B | **done** |
-| `06_related_work_STUB.md` | **A** | **STUB — not drafted.** Brief inside the file |
+| `06_related_work.md` | B (was A's) | **drafted** — but see the citation caveat below |
 | `02_methodology.md` | B | **done** |
 | `03_results.md` | B | **done** — regenerate numbers from `analysis/RESULTS_DRAFT.md` after any new run |
 | `04_discussion.md` | B | **done** |
-| `05_limitations_dualuse.md` | B | **done** — required and scored |
+| `05_limitations_dualuse.md` | joint | **done** — required and scored. §A.1–A.3 derive from the repo's pre-results `LIMITATIONS.md`; §A.4 is post-run |
 
 ## Before submitting
 
-1. **Re-run the pipeline and reconcile the numbers.** Results prose was written
-   against a specific run. Any new E1/E3 data changes it:
+1. **Verify the numbers mechanically. Do not eyeball them.**
    ```bash
    python analysis/stats.py --eai && python analysis/results_draft.py
    python analysis/figures.py
+   python report/check_numbers.py      # <- this one is the gate
    ```
-   Then diff `analysis/RESULTS_DRAFT.md` against §4 and the Abstract.
-   **`RESULTS_DRAFT.md` is ground truth; the prose is downstream of it.**
-   The pooled false-page figure has already moved once (66% → 54%) as Groq
-   data landed, so assume it has moved again.
-2. **Official template.** Still "Coming Soon" on the Guidelines tab when this
-   was written. Page estimate is **6.9–9.9** depending on column count.
-   If it is single-column and the appendix counts toward the 8 pages, cut in
-   this order — least damage to the score first:
-   - Methodology §3.1 corpus provenance detail (~150 words)
-   - Discussion §5 paragraph 1, which restates Results (~90 words)
-   - Introduction contributions list, compress to prose (~120 words)
-   - **Do not cut** the Limitations appendix (required and scored), the
-     ORACLE disclaimers, the labeller disclosure, or the E3 truncation
-     caveat.
-3. **Figures.** `analysis/figures/figure1_detection_vs_false_page.pdf` is the
-   front-page figure; `figure2_eai_timeline.pdf` supports §4.3.
-4. **Checklist** from the guidelines: PDF on the official template; abstract
-   ≤150 words; author names and affiliations; Limitations and Dual-Use
-   appendix; no novel installation recipes released without review.
+   `check_numbers.py` cross-checks every headline figure in `report/` against
+   `analysis/e1_stats.json`: each row of the per-model table, the pooled
+   figures, the significance count, the E3 totals, and that no model in the
+   data is missing from the table. **It exists because the report silently went
+   stale once already** — the Groq arm moved pooled false-page 54% → 46% and
+   turned "0 of 9 models reach significance" into "2 of 10", while the Abstract
+   and Introduction still asserted the old claim. Treat a non-zero exit as
+   blocking.
+
+2. **Related Work needs citations.** `06_related_work.md` is grounded in the
+   two verified primary sources and one arXiv reference already used in the
+   repo. Its claims about *what existing security-refusal benchmarks do and do
+   not report* are stated from our own reading and are **not backed by named
+   citations**. Before submission either attach specific benchmarks or soften
+   to "to our knowledge". A visible note in the section says so.
+
+3. **Page budget.** Estimate is **7.9–11.5 pages** (text 5,340 words + ~0.8
+   page of figures) depending on whether the template is one or two columns,
+   and on whether the required appendix counts toward the 8 pages. The template
+   was still "Coming Soon" when this was written. **If it is single-column, or
+   the appendix counts, cut in this order:**
+   - Methodology §3.1 corpus provenance detail — the repo has it in full
+   - Appendix §A.1–A.3 — these derive from `LIMITATIONS.md`, which is linked
+   - Discussion ¶1, which restates Results
+   - Introduction contributions list → prose
+   - **Do not cut:** the significance framing, the ORACLE disclaimers, the
+     labeller disclosure, the E3 phase-clustered truncation note, or §A.4.
+
+4. **Checklist** (guidelines): PDF on the official template; abstract ≤150
+   words (**currently 148**); author names and affiliations; Limitations and
+   Dual-Use appendix; artifacts **linked, not embedded**; no novel installation
+   recipes released without review.
 
 ## One norm to check before cross-posting
 
 The sprint guidelines say that for **LessWrong** write-ups specifically:
 *"don't use LLMs for writing on LessWrong, only use LLMs to find problems in
-your drafts, not to draft it."* These sections were **drafted by an LLM**. That
-is not a problem for the sprint PDF, but if this is cross-posted to LessWrong
-it needs to be rewritten by a human first, or the norm is being broken.
+your drafts, not to draft it."* These sections were **drafted by an LLM**. Fine
+for the sprint PDF; if this is cross-posted to LessWrong it needs a human
+rewrite first, or the norm is being broken.

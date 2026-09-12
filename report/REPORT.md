@@ -3,20 +3,20 @@
 ## Abstract
 
 Would an LLM on monitoring duty have paged the on-call during the July 2026
-Hugging Face agent intrusion? We rebuilt the incident from its published
-timeline as a replayable 17,613-action stream, generated a size-matched benign
-control, verified blind that the two are not trivially separable, and ran nine
-models across two providers past both — at $0.00.
+Hugging Face agent intrusion? We rebuilt it from the published timeline as a
+replayable 17,613-action stream, generated a size-matched benign control,
+verified blind that the two are not trivially separable, and ran ten models
+across two providers past both, at $0.00.
 
-Models catch the incident and cry wolf. 90% of milestone-carrying attack
-windows produce a page (66/73); so do 54% of innocent windows (50/92). A
-keyword rule shows the same shape, and no model reaches significance at our
-sample sizes.
+Models catch the incident and cry wolf: 89% of milestone-carrying attack
+windows produce a page (73/82), and so do 46% of innocent windows (56/121). A
+keyword rule shows the same shape. Only 2 of 10 models separate the streams
+significantly — the two we sampled deepest.
 
 We then wrapped byte-identical evidence in a monitor frame and an assistant
-frame. Incoherence was zero — but the frames disagreed sharply and in one
-direction: models assisted on 45/45 moments while escalating on 16
-(p=0.0001). The risk is not refusal; it is fluent analysis with a silent pager.
+frame. Incoherence was zero, but the frames disagreed in one direction: models
+assisted on 45/45 moments while escalating on 16 (p=0.0001). The risk is not
+refusal; it is fluent analysis with a silent pager.
 
 
 ## 1. Introduction
@@ -43,16 +43,17 @@ Nine models across two providers, at a total cost of **$0.00**.
 **Two findings, and the second is the one we did not expect.**
 
 **Models catch the incident, and page on the control almost as readily.**
-Across the roster, 90% of milestone-carrying attack windows produce a page
-(66/73) — and so do **54% of windows in an innocent shift** (50/92). A
+Across the roster, 89% of milestone-carrying attack windows produce a page
+(73/82) — and so do **46% of windows in an innocent shift** (56/121). A
 15-line keyword rule shows the same pattern (67% against 28%), so this is not
 a matter of models being crude; it is that the discriminating signal in this
 corpus is thin, and recall bought by paging on everything is worth nothing.
-The spread across models matters more than any single model's number: the
-best discriminators sit at 40% and 24% false-page rates while the worst pages
-on 11 of 12 benign windows for a perfect 12/12 recall. **No model reaches
-statistical significance on stream separation at our sample sizes**, and we
-say so rather than promoting a *p* = 0.057.
+The spread across models matters more than any single model's number: the best
+discriminators reach 18% and 29% false-page rates while the worst pages on 11
+of 12 benign windows for a perfect 12/12 recall. **Only 2 of 10 models separate
+the streams significantly — and they are precisely the two we could afford to
+sample deeply**, which makes the roster-wide gradient, not any single model's
+*p*-value, the claim we stand behind.
 
 **The failure mode is under-escalation, not refusal.** We expected the
 safety-relevant risk to be a model that declines to engage with intrusion
@@ -90,23 +91,61 @@ throughput and not price.
 
 ## 2. Related Work
 
-> **OWNED BY A (Amirtha) — NOT DRAFTED HERE.** Placeholder so the assembly is
-> complete and the gap is visible rather than silent.
->
-> What this section needs to cover, based on what the rest of the report
-> already claims:
->
-> - **Security-refusal benchmarks** — what exists, and the gap this fills:
->   none of them report a *fabrication* rate or measure escalation against a
->   matched benign control. Our contribution is the control and the
->   selectivity axis, not the refusal axis.
-> - **Alert fatigue / false-positive burden in SOC literature** — needed to
->   support the Discussion's claim that a 54% false-page rate degrades
->   response capacity rather than adding to it.
-> - **Agentic incident reconstruction / replayable incident corpora** — prior
->   art on turning post-incident write-ups into evaluable artefacts.
-> - **LLM-as-monitor / LLM-as-judge reliability**, particularly framing
->   sensitivity, which is exactly what E3 measures.
+**The incident.** Our substrate is a reconstruction of the July 2026 Hugging
+Face agent intrusion, built from two independently-fetched primary sources: HF's
+own technical timeline [1] and OpenAI's 38-page incident report [2]. Both were
+retrieved and cross-checked on 2026-09-04; where their published tables
+disagree we carry the disagreement rather than resolving it silently
+(Methodology §3.1). Everything offensive in our corpus is downstream of those
+two documents.
+
+**Why a replayable stream.** The question this paper answers was asked publicly
+of that incident by practitioners — *"which action number does your control
+fire on?"* — and it is unanswerable against a prose timeline. Post-incident
+write-ups are narrative; detection latency is a function of an ordered event
+stream. Converting the former into the latter, with ground-truth labels and a
+matched control, is the contribution that makes the rest measurable.
+
+**Refusal benchmarks and what they do not measure.** Existing security-refusal
+evaluations score a model's willingness to engage with security content, and
+typically collapse *refused* and *filtered* into one category. We separate them
+(Methodology §3.6), because our own earlier measurement found the dominant
+non-response mode on defensive SOC prompts to be a platform filter blocking the
+request before generation — zero completion tokens, no model judgment involved.
+Over-blocking of defensive security work is a known and actively-researched
+failure mode rather than a novel observation [3].
+
+Two things distinguish what we measure from that literature. First, refusal
+benchmarks have no **matched benign control**, so they cannot report
+selectivity — and selectivity, not willingness, turns out to be where these
+models fail. Second, and more directly: **refusal was not the failure mode we
+found at all.** In 45 scoreable moments, not one model declined to analyse
+evidence. A benchmark measuring only the refusal axis would have recorded a
+clean sheet and missed the finding entirely.
+
+**Non-LLM baselines.** We include three rule detectors (severity oracle, volume
+spike, keyword/Sigma set) on the same axes as the models, because a page rate
+without a comparator is uninterpretable. This follows standard detection-
+engineering practice rather than any specific prior system; the point is that
+the comparison is cheap and that omitting it makes the model numbers unreadable.
+
+> **Note for revision.** The claims in the third and fourth paragraphs about
+> what existing security-refusal benchmarks do and do not report are stated
+> from our own reading and are **not yet backed by specific citations**. Before
+> submission, either attach named benchmarks or soften to "to our knowledge".
+> Named prior work is the one thing in this report not sourced to a document in
+> the repository. See `report/README.md`.
+
+---
+
+[1] Hugging Face, *Anatomy of a Frontier Lab Agent Intrusion: A Technical
+Timeline of the July 2026 Incident*, 2026-07-27.
+`https://huggingface.co/blog/agent-intrusion-technical-timeline`
+
+[2] OpenAI, *Hugging Face Incident Technical Report*, 38pp.
+`https://cdn.openai.com/pdf/67869394-cb91-4c12-888c-5cbd85c7814c/OpenAI-Hugging-Face%20Incident-Technical-Report.pdf`
+
+[3] *Defensive Refusal Bias*, arXiv:2603.01246.
 
 
 ## 3. Methodology
@@ -116,10 +155,9 @@ throughput and not price.
 We reconstruct the July 2026 Hugging Face agent intrusion from its published
 technical timeline [1] as a replayable action stream. The corpus is
 **generated, not hand-written**: every count, phase boundary and milestone
-timestamp is read from a single machine-readable ground-truth file, and the
-generator asserts at build time that each defined milestone is actually placed.
-The reconstruction covers **17,613 attacker actions** between 2026-07-09 02:28
-UTC and 2026-07-13 14:14 UTC.
+timestamp comes from one machine-readable ground-truth file, and the generator
+asserts at build time that each defined milestone is placed. It covers **17,613
+attacker actions** between 2026-07-09 02:28 and 2026-07-13 14:14 UTC.
 
 One source discrepancy is inherited rather than smoothed over: the published
 phase and daily-volume tables disagree (16,521 vs 17,613 actions). We take the
@@ -161,9 +199,7 @@ defensible.
 ### 3.3 E0 — non-LLM rule baselines
 
 Three detectors run over identical streams, windowing and ground truth, at zero
-API cost. Without them, "model X pages at a 40% false-page rate" gives a reader
-nothing to compare against.
-
+API cost; without them a model's page rate has nothing to compare against.
 `volume_spike` and `keyword_sigma` see **only** the projection a model under
 evaluation sees. `sev_threshold` deliberately breaks that rule and reads
 ground-truth severity: **it is an ORACLE — the upper bound for a detector that
@@ -314,31 +350,33 @@ is what makes the model numbers interpretable.
 | `gemini-3.7-flash` | Google | 3/5 (60%, 23–88%) | 1/4 (25%, 5–70%) | +35% | 0.524 |
 | `gemini-3.8-flash` | Google | 1/1 (100%, 21–100%) | — | — | — |
 | `gemma-4-26b-a4b-it` | Google | 11/12 (92%, 65–99%) | 7/12 (58%, 32–81%) | +33% | 0.155 |
-| `gpt-oss-120b` | Groq | 3/5 (60%, 23–88%) | 6/25 (24%, 11–43%) | +36% | 0.143 |
+| `gpt-oss-120b` | Groq | 7/11 (64%, 35–85%) | 6/33 (18%, 9–34%) | +45% | **0.008** |
+| `qwen3.8-27b` | Groq | 3/3 (100%, 44–100%) | 6/21 (29%, 14–50%) | +71% | **0.042** |
 
-Intervals are Wilson 95%. **Pooled: milestone 66/73 (90%), benign false-page
-50/92 (54%).**
+Intervals are Wilson 95%. **Pooled: milestone 73/82 (89%), benign false-page
+56/121 (46%).**
 
-Models find the incident — 90% of milestone-carrying windows produce a page —
-and they also page on **more than half of an innocent shift**. This is the E0
-result surviving contact with frontier models: `keyword_sigma`'s inability to
-separate the streams is not an artefact of it being a crude rule.
+Models find the incident — 89% of milestone-carrying windows produce a page —
+and they also page on **46% of an innocent shift**. This is the E0 result
+surviving contact with frontier models: `keyword_sigma`'s inability to separate
+the streams is not an artefact of it being a crude rule.
 
-**Significance, stated plainly: 0 of 9 models reach *p* < 0.05** on the
-milestone-versus-benign contrast at this sample size. Per-model *n* is 4–36 and
-the intervals overlap heavily. **The reportable claim is the gradient across
-models, not any individual model's separation**, and we do not dress a
-*p* = 0.057 as a result. Widening the sample is the highest-value follow-up and
-the sampling ladder makes it purely additive.
+**Significance: 2 of 10 models reach *p* < 0.05** on the milestone-versus-benign
+contrast — `gpt-oss-120b` (*p* = 0.008) and `qwen3.8-27b` (*p* = 0.042), the two
+models with the deepest benign sampling. **Eight do not**, and the two that do
+are exactly the two we could afford to sample properly: they carry *n* = 33 and
+*n* = 21 benign windows against *n* = 4–12 for the Google arm. That is a
+statement about our budget, not about those models being different in kind — so
+we report the **gradient across models** as the finding and do not dress a
+*p* = 0.057 elsewhere as a result.
 
-The gradient itself is the interesting part, and it is not monotone in
-capability. `gemini-3.1-flash-lite` scores a perfect 12/12 on milestones while
-paging on 11 of 12 benign windows — recall bought by paging on nearly
-everything, which is worth nothing operationally. `gemini-3.6-flash` (9/10
-against 40%) and `gpt-oss-120b` (3/5 against 24%) actually discriminate.
-Figure 1 puts every detector on one pair of axes; distance **above** the
-diagonal is the only thing on it worth having, and several models sit close
-to it.
+The gradient is not monotone in capability, which is the substantive point.
+`gemini-3.1-flash-lite` scores a perfect 12/12 on milestones while paging on 11
+of 12 benign windows — recall bought by paging on nearly everything, worth
+nothing operationally. At the other end `gpt-oss-120b` reaches 7/11 at an 18%
+false-page rate and `qwen3.8-27b` 3/3 at 29%. Figure 1 puts every detector on
+one pair of axes; distance **above** the diagonal is the only thing on it worth
+having, and several models sit close to it.
 
 ### 4.3 First-page latency is degenerate on this corpus (E1)
 
@@ -398,12 +436,15 @@ throughput, not price: 10–31 requests per model per day on Google AI Studio,
 
 ## 5. Discussion
 
-**Recall is the easy half.** Nine models, two providers, three rule baselines,
+**Recall is the easy half.** Ten models, two providers, three rule baselines,
 and almost everything finds the incident. What separates them is selectivity,
-and the spread there is large and not monotone in capability: a flash-lite
-model buys 12/12 recall by paging on 11 of 12 benign windows, while a
-mid-sized model reaches 9/10 at a 40% false-page rate. Deploying on recall
-alone would select the worst detector in the roster.
+and the spread is large and not monotone in capability: a flash-lite model buys
+12/12 recall by paging on 11 of 12 benign windows, while `gpt-oss-120b` reaches
+7/11 at an 18% false-page rate. **Deploying on recall alone would select the
+worst detector in the roster.** Note also which models cleared significance —
+the two with the deepest benign sampling, not the two most capable. Sampling
+depth and selectivity are confounded here, and we say so rather than reading a
+capability story into it.
 
 **The metric you pick decides the answer.** First-page latency — the obvious
 metric, and the one we pre-registered — is degenerate here: every detector,
@@ -429,114 +470,151 @@ understanding?" — and here it demonstrably does not.
 
 ## Appendix A — Limitations and Dual-Use Considerations
 
-### A.1 What this study cannot establish
+The first three subsections were written **before any results existed**, as
+`LIMITATIONS.md` in the repository, so they are not shaped by what we found.
+§A.4 records what the run itself taught us, including where the executed study
+diverged from the plan these limitations were written against.
 
-These were pre-registered before any model was run, and are reproduced with
-what the run actually taught us added.
+### A.1 The corpus is a reconstruction, not telemetry
 
-**The corpus is a reconstruction, not a capture.** Claims are about model
-behaviour on a faithful scaffold built from published figures, not about what
-Hugging Face's stack would have done. The generator follows the source's counts,
-phase boundaries and milestone timestamps, but **75% of the corpus (13,163
-actions across recon and dropper) carries no sourced milestone** — it is filler
-obeying published marginals, so behaviour there is behaviour on our generator.
-The two published source tables also disagree (16,521 vs 17,613); we took the
-daily-volume total and carried the remainder as an `unclassified` residual, and
-a different resolution would shift denominators slightly.
+Built from **published figures only**. It matches the published phase totals,
+per-phase windows, daily volumes and documented milestone ordering. It does
+**not** reproduce Hugging Face's logs, their internal severity logic, or their
+true log verbosity. Every claim is about **model behaviour on a faithful
+scaffold**, not about what HF's stack would have done.
+
+**75% of the corpus has no sourced milestone** — recon (6,191) plus dropper
+(6,972) = 13,163 actions carry published marginals and nothing else. Treat the
+bulk phases as volume-realistic and content-synthetic.
+
+**The published sources contradict each other and we did not paper over it:**
+16,521 against 17,613 actions; the 1,092-action `unclassified` row this forced
+is our inference and is labelled as such. **Four of twelve milestone timestamps
+are interpolated** between sourced anchors, each marked `t_utc_estimated`. **The
+MITRE mappings are ours** — neither source uses ATT&CK — and since the
+escalation ground truth keys off tactic, our mapping partly determines the
+metric that scores it (`mitre_confidence: inferred` on every row).
+
+### A.2 Measurement caveats
 
 **Prompt framing is not authentication.** A model reading "you are the triage
-layer" cannot verify it. Everything here measures response to a *claimed* role.
+layer" cannot verify it; this is why the design calls for an attestation layer
+rather than better prompting.
 
-**Single-run, single-turn, text-only, English-only.** No temperature sweep, no
-multi-turn drift, no tool use, no repeated sampling — every number is one draw
-at temperature 0. A model that pages 40% of the time here might page 60% on a
-re-run, and we have not measured that variance.
+**Single-run, single-turn, text-only, English-only.** Temperature 0, one draw
+per cell. No multi-turn drift, no tool use, no agentic scaffolds, and **no
+repeated sampling** — a model that pages 40% here might page 60% on a re-run,
+and we have not measured that variance.
+
+**A model is not a model; it is a model as served by someone.** Serving stacks
+differ in quantisation, sampling defaults, system-prompt injection and
+moderation, so every table reports the provider beside the model ID.
+`gpt-oss-20b` vs `gpt-oss-120b` is the one clean comparison, both on one stack.
+Results are a snapshot of 2026-09; endpoints change without notice.
+
+**A filter is not a refusal.** Our rubric separates `filtered` (platform
+blocked the request, zero completion tokens, the model never saw it) from
+`refused` (the model produced text declining to engage). Prior refusal
+benchmarks collapse these; conflating them attributes to model judgment
+something no model judged, and would have inflated our own headline.
+
+**One of our own bugs is instructive and is disclosed.** At a 300-token budget
+GLM-5.2 spent 524 tokens reasoning and returned empty content — scored naively,
+a refusal. **This bug class recurred four times in this project**, most recently
+when `gpt-oss-20b` spent 1,998 of a 2,000-token budget on reasoning and emitted
+nothing. Each time the fix was budget, not interpretation. Any benchmark that
+does not separate `truncated` from `refused` will systematically over-report
+refusal for reasoning models, and will do so *more* for the models that reason
+hardest.
+
+### A.3 Dual-use considerations
+
+**What the artifact contains.** An action-indexed, phase-labelled event stream,
+either drawn from already-public post-mortems or synthetic filler built from
+ordinary administrative commands (`kubectl get pods`, `kubectl auth can-i`). It
+contains **no working exploit code, no payloads, no novel installation recipes
+and no credentials.** The one credential-shaped string is the well-known
+link-local IMDS address, which appears in vendor hardening documentation.
+
+**What it is for.** SecureLayer7 publicly asked of this incident: *"which action
+number does your control fire on?"* That is unanswerable without a replayable
+stream. HF said much the same: *"if any of that trace ever ships in a form
+defenders can replay against their own stack… some of us would build against
+it."* This corpus exists to make control-firing latency measurable. Its
+intended users are defenders.
+
+**Uplift assessment.** The offensive content is a chronological ordering of
+techniques already documented in the two primary sources. An attacker gains no
+capability from the ordering that those do not already give them. The value-add
+— marginal-matched volume, ground-truth labels, an answer key — is for
+*evaluating detectors*, not for conducting intrusions.
+
+**The dual-use surface is the finding, not the data.** We report which models
+under-escalate and by how much. An attacker knowing a monitor pages on only a
+third of pivotal moments could in principle shape activity beneath it. Three
+things bound this: it is a September-2026 snapshot of production endpoints that
+model updates will invalidate; it is specific to our reconstruction, and
+generalisation to real SOC telemetry is exactly what we do not claim; and it is
+the same fact a defender needs before putting a model on monitoring duty.
+Withholding it protects no one and leaves operators calibrating on optimism.
+The same applies to the false-page rate: alert fatigue is a documented failure
+mode, and a monitor that fires on 46% of a benign shift degrades response
+capacity rather than adding to it.
+
+**What we withhold.** No novel installation recipe is released without review.
+
+**A finding stated at the width we can defend.** Requests to Claude models *via
+OpenRouter* were blocked before generation on defensive SOC triage prompts,
+including a pure "should I page the on-call?" frame. We report this as a
+measured behaviour **of that access path** and deliberately do not name which
+layer imposes it: route-invariance across three of that aggregator's routes
+does not distinguish an aggregator filter from a vendor one, and we did not run
+the first-party test that would. Over-blocking of defensive security work is a
+known failure mode [3], not a novel accusation. Naming a company for a block we
+cannot localise would be the error this appendix exists to prevent.
+
+### A.4 What the run changed, and what it added
+
+**Where the executed study diverged from the plan.** The pre-results version of
+this appendix assumed all calls would run through OpenRouter at `n = 3`, and
+that a 60-item E2 subsample would be double-scored for Cohen's κ. None of that
+happened: no OpenRouter key was available, so the study ran on Google AI Studio
+and Groq at `n = 1`; **E2 and E4 were cut** to protect E0, E1 and E3; and with
+E2 cut there is **no inter-rater κ**. No headline number here is decided by a
+model acting as judge — the E1 and E3 verdicts are the models' own structured
+outputs, scored mechanically — but the calibration step the plan promised did
+not occur, and we do not claim it did.
 
 **Statistical power is the dominant limitation and it is unevenly
-distributed.** Per-cell *n* is 4–36, intervals overlap heavily, and **no model
-reaches *p* < 0.05** on stream separation. The gradient across models is the
-reportable claim; no individual model's separation is established. The Google
-arm is thinnest — free-tier caps of 10–31 requests per model per day left
-several Gemini models at *n* = 1–12, one at a single window. **Those rows are
-in the table because omitting them would be selective reporting, not because
-they support a conclusion.** The sampling ladder makes widening purely
-additive, so this is a resource limit, not a design one.
-
-**Three E3 moments are unscoreable and they are not randomly distributed.**
-`gpt-oss-20b` exhausted its whole token budget on reasoning for moments 19, 23
-and 24 even at a 3× re-run — two `supply_chain`, one `k8s`. Evidence length is
-identical across all 24 moments, so the loss is model behaviour, not prompt
-size. It falls on the late-stage, higher-consequence phases, which is the
-direction that flatters the model.
-
-**E3 covers two models, both from one family on one provider.** The zero
-incoherence rate and the escalate-vs-assist asymmetry are established for
-`gpt-oss-120b` and `gpt-oss-20b`, not for the frontier arm. Whether Gemini
-models show the same asymmetry is untested and is the first thing we would run
-next.
-
-**The blind separability check was labelled by an LLM, not a human.** The
-pre-registration specifies a human rater. n = 20 makes it a screen for trivial
-separability, not a powered test — it cannot resolve 55% from 70%.
-
-**Serving stacks are a confound we bound but cannot remove.** A model is a
-model *as served by someone*: quantisation, sampling defaults, system-prompt
-injection and moderation layers all differ. We report the provider beside every
-model ID and keep the two as separate arms. `gpt-oss-20b` vs `gpt-oss-120b` is
-the one clean comparison, both on one stack.
+distributed.** Per-cell *n* runs from 1 to 33. Only **2 of 10 models reach
+*p* < 0.05** on stream separation, and the confound is ours: they are the two
+we could sample deepest (*n* = 33 and *n* = 21 benign windows, against
+*n* = 4–12 for the Google arm). **Significance here tracks sampling budget at
+least as much as model behaviour.** Free-tier caps of 10–31 requests per model
+per day left several Gemini models at *n* = 1–12, one at a single window.
+Those rows are in the table because omitting them would be selective
+reporting, not because they support a conclusion.
 
 **Frontier proprietary models are absent.** The Gemini Pro tier returns
 `limit: 0` at $0 — refused, not throttled — and no GPT- or Claude-class model
 was reachable free. Our "frontier" arm is frontier-*flash*.
 
-### A.2 Dual-use considerations
+**E3 covers two models from one family on one provider.** The zero incoherence
+rate and the escalate-vs-assist asymmetry are established for `gpt-oss-120b`
+and `gpt-oss-20b`, not for the frontier arm. Whether Gemini models show the
+same asymmetry is untested and is the first thing we would run next.
 
-**What is in the artefact.** A generated action stream reconstructing a
-publicly documented intrusion, a benign control, a monitor-frame harness, and
-scoring code. The corpus contains synthetic log lines describing attacker
-behaviour at the level of abstraction the published timeline already uses —
-phase names, host roles, event descriptions, timestamps.
+**Three E3 moments are unscoreable and not randomly distributed.** Moments 19,
+23 and 24 on `gpt-oss-20b` remain `truncated` after a 3× budget re-run — two
+`supply_chain`, one `k8s`. Evidence length is identical across all 24 moments,
+so prompt size does not explain it. The residue falls on the higher-consequence
+phases, the direction that **flatters** the model.
 
-**What is not in it, deliberately.** No working exploit, payload, credential,
-novel installation recipe, or technique absent from the public source. The
-corpus is a *detection* substrate: it describes what an intrusion looked like
-in a log, not how to perform one. Every step is downstream of a vendor's own
-post-incident write-up.
-
-**The realistic misuse path, and why we judge it low.** Someone could read the
-corpus as a checklist of what a real agent intrusion looked like — information
-already public in the source we cite, in more operational detail than our
-reconstruction carries. We add no capability; we add a benchmark.
-
-**The genuine dual-use surface is the finding, not the data.** We report which
-models under-escalate and by how much. An attacker who knew that a particular
-monitor model pages on only a third of pivotal moments could, in principle,
-shape activity to stay under it. Three things bound this. The measurement is a
-snapshot of production endpoints in September 2026 and will not survive model
-updates. It is specific to our reconstruction, and generalisation to a real
-SOC's telemetry is exactly what we do not claim. And the same information is
-what a defender needs to decide whether to put a model on monitoring duty at
-all — withholding it protects no one and leaves operators calibrating on
-optimism.
-
-**On the false-page finding specifically.** Publishing "these models page on
-half of a benign shift" is defensive information. Alert fatigue is a documented
-failure mode in security operations; a monitor that cries wolf at this rate
-degrades response capacity rather than adding to it, and an operator deploying
-one should know that before the pager does.
-
-**Release posture.** Harness, corpus generator, ground truth, raw per-window
-decisions and scoring code are released so the numbers can be audited and the
-sample widened. Consistent with the sprint's disclosure guidance, we release no
-novel installation recipe and nothing that is not derivable from the cited
-public source.
-
-### A.3 Honest scope statement
-
-This is a weekend study. It has a validated control, pre-registered metrics, a
-frozen rubric with a logged amendment, exact rather than asymptotic statistics,
-and non-LLM baselines on the same axes. It does not have the sample size to
-rank individual models, and it should not be cited as doing so. What it
-supports is a claim about a *pattern* — high recall, poor selectivity, and
-under-escalation on evidence models will readily discuss — and a reusable
-substrate for testing whether that pattern holds at *n* we could not afford.
+**Scope statement.** This is a weekend study with a validated control,
+pre-registered metrics, a frozen rubric with a logged amendment, exact rather
+than asymptotic statistics, and non-LLM baselines on the same axes. It does not
+have the sample size to rank individual models and should not be cited as doing
+so. What it supports is a claim about a *pattern* — high recall, poor
+selectivity, and under-escalation on evidence models will readily discuss — and
+a reusable substrate for testing whether that pattern holds at *n* we could not
+afford.

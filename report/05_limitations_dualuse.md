@@ -18,13 +18,12 @@ scaffold**, not about what HF's stack would have done.
 bulk phases as volume-realistic and content-synthetic.
 
 **The published sources contradict each other and we did not paper over it:**
-the phase table sums to 16,521, the daily-volume table to 17,613. The
-1,092-action `unclassified` row this forced is our inference and is labelled as
-such. **Four of twelve milestone timestamps are interpolated** between sourced
-anchors ("shortly before midnight"), each marked `t_utc_estimated`. **The MITRE
-mappings are ours** — neither source uses ATT&CK — and since the escalation
-ground truth keys off tactic, our mapping partly determines the metric that
-scores it. Every row is flagged `mitre_confidence: inferred`.
+16,521 against 17,613 actions; the 1,092-action `unclassified` row this forced
+is our inference and is labelled as such. **Four of twelve milestone timestamps
+are interpolated** between sourced anchors, each marked `t_utc_estimated`. **The
+MITRE mappings are ours** — neither source uses ATT&CK — and since the
+escalation ground truth keys off tactic, our mapping partly determines the
+metric that scores it (`mitre_confidence: inferred` on every row).
 
 ### A.2 Measurement caveats
 
@@ -39,10 +38,9 @@ and we have not measured that variance.
 
 **A model is not a model; it is a model as served by someone.** Serving stacks
 differ in quantisation, sampling defaults, system-prompt injection and
-moderation. Every table reports the provider beside the model ID.
-`gpt-oss-20b` vs `gpt-oss-120b` is the one clean comparison here, both on one
-stack. **Production endpoints change without notice** — results are a snapshot
-of 2026-09, with model ID and UTC timestamp logged for every call.
+moderation, so every table reports the provider beside the model ID.
+`gpt-oss-20b` vs `gpt-oss-120b` is the one clean comparison, both on one stack.
+Results are a snapshot of 2026-09; endpoints change without notice.
 
 **A filter is not a refusal.** Our rubric separates `filtered` (platform
 blocked the request, zero completion tokens, the model never saw it) from
@@ -61,13 +59,12 @@ hardest.
 
 ### A.3 Dual-use considerations
 
-**What the artifact contains.** An action-indexed, phase-labelled event stream
-whose content is either drawn from already-public post-mortems or is synthetic
-filler built from ordinary, widely-documented administrative commands
-(`kubectl get pods`, `kubectl auth can-i`). It contains **no working exploit
-code, no payloads, no novel installation recipes and no credentials.** The one
-credential-shaped string is the well-known link-local IMDS address, which
-appears in vendor hardening documentation.
+**What the artifact contains.** An action-indexed, phase-labelled event stream,
+either drawn from already-public post-mortems or synthetic filler built from
+ordinary administrative commands (`kubectl get pods`, `kubectl auth can-i`). It
+contains **no working exploit code, no payloads, no novel installation recipes
+and no credentials.** The one credential-shaped string is the well-known
+link-local IMDS address, which appears in vendor hardening documentation.
 
 **What it is for.** SecureLayer7 publicly asked of this incident: *"which action
 number does your control fire on?"* That is unanswerable without a replayable
@@ -77,10 +74,9 @@ it."* This corpus exists to make control-firing latency measurable. Its
 intended users are defenders.
 
 **Uplift assessment.** The offensive content is a chronological ordering of
-techniques already documented in two vendor post-mortems, an OpenAI technical
-report and multiple public analyses. An attacker gains no capability from the
-ordering that the sources do not already give them. The genuine value-add —
-marginal-matched volume, ground-truth labels, an answer key — is useful for
+techniques already documented in the two primary sources. An attacker gains no
+capability from the ordering that those do not already give them. The value-add
+— marginal-matched volume, ground-truth labels, an answer key — is for
 *evaluating detectors*, not for conducting intrusions.
 
 **The dual-use surface is the finding, not the data.** We report which models
@@ -100,14 +96,12 @@ capacity rather than adding to it.
 **A finding stated at the width we can defend.** Requests to Claude models *via
 OpenRouter* were blocked before generation on defensive SOC triage prompts,
 including a pure "should I page the on-call?" frame. We report this as a
-measured, reproducible behaviour **of that access path**, and deliberately do
-not name which layer imposes it: route-invariance across three of that
-aggregator's routes does not distinguish an aggregator filter from a vendor
-one, and we did not run the first-party test that would. Over-blocking of
-defensive security work is a known, actively-researched failure mode
-(*Defensive Refusal Bias*, arXiv 2603.01246), not a novel accusation. Naming a
-company for a block we cannot localise would be the error this appendix exists
-to prevent.
+measured behaviour **of that access path** and deliberately do not name which
+layer imposes it: route-invariance across three of that aggregator's routes
+does not distinguish an aggregator filter from a vendor one, and we did not run
+the first-party test that would. Over-blocking of defensive security work is a
+known failure mode [3], not a novel accusation. Naming a company for a block we
+cannot localise would be the error this appendix exists to prevent.
 
 ### A.4 What the run changed, and what it added
 
