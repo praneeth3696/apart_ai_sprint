@@ -7,6 +7,16 @@ with the deepest benign sampling, not the two most capable. Sampling depth and
 selectivity are confounded, and we say so rather than reading a capability
 story into it.
 
+**A false page is not a free page.** Alert fatigue is a documented,
+surveyed failure mode in real security operations centres [11]: false
+positives consume the analyst hours that genuine detections need, and
+sustained volume drives both error and attrition. A monitor that pages on
+roughly half of an intrusion-free stream is therefore not a conservative
+monitor with a tolerable overhead — on the receiving end it is
+indistinguishable from the alert load SOC teams already cannot clear. The
+benign-stream page rate belongs next to recall in any deployment decision,
+not in a footnote.
+
 **The metric you pick decides the answer.** First-page latency — the obvious
 metric, and the one we pre-registered — is degenerate here: every detector,
 rule and model alike, fires within the first 50 of 17,613 actions, on filler

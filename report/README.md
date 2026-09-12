@@ -37,12 +37,15 @@ python report/assemble.py
    and Introduction still asserted the old claim. Treat a non-zero exit as
    blocking.
 
-2. **Related Work needs citations.** `06_related_work.md` is grounded in the
-   two verified primary sources and one arXiv reference already used in the
-   repo. Its claims about *what existing security-refusal benchmarks do and do
-   not report* are stated from our own reading and are **not backed by named
-   citations**. Before submission either attach specific benchmarks or soften
-   to "to our knowledge". A visible note in the section says so.
+2. **Related Work citations — done 2026-09-12.** `06_related_work.md` now
+   carries 11 named references, each checked against its arXiv/DOI landing page
+   before being cited; the revision note is removed. Two claims changed rather
+   than gained a citation, because the literature did not support them as
+   drafted: SIR-Bench *does* report a false-positive rejection rate (73.4%), so
+   the "no prior benchmark reports a false-alarm rate" claim is narrowed to the
+   *matched benign control* specifically, and the incident-replay paragraph now
+   cites SecRespond, SIR-Bench and CyberSOCEval as genuine prior art instead of
+   implying there was none. Nothing is cited that was not verified.
 
 3. **Page budget.** Estimate is **7.9–11.5 pages** (text 5,340 words + ~0.8
    page of figures) depending on whether the template is one or two columns,
