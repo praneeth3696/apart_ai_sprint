@@ -154,13 +154,22 @@ Access / T1552.005).
 `first_rce` = the `sandbox_self_test_rce` milestone (07-09 04:01), **not**
 `jinja2_ssti_rce` (07-11 16:07) — different events two days apart.
 
-**Pre-declared: lead time to first exfil is negative.** The exfil phase opens
-07-09 14:11; the escalation point is 07-11 17:47:30. Any detector obeying this
-rule pages **≈51.6 h after exfiltration has already begun**. This is a property
-of the published phase windows, not a defect. We commit now to reporting it as
-a finding — *"even a perfectly-calibrated detector pages 53 hours after
-exfiltration began"* — and not to silently reselecting a rule that produces a
-prettier number. Lead time to admin/host-level access is **+10.0 h**.
+**Pre-declared: lead time to first exfil is negative.** The first exfiltration
+*action* is #1,894 at 07-09 14:21:44; the escalation point is 07-11 17:47:30.
+Any detector obeying this rule pages **≈51.4 h after exfiltration has already
+begun**. This is a property of the published phase windows, not a defect. We
+commit now to reporting it as a finding — *"even a perfectly-calibrated detector
+pages more than two days after exfiltration began"* — and not to silently
+reselecting a rule that produces a prettier number. Lead time to admin/host-level
+access is **+10.0 h**.
+
+> **Basis, fixed 2026-09-12 (see §9).** Lead time is measured from the **first
+> exfil action (#1,894, 14:21:44)**, not from the exfil phase *window* opening at
+> 14:11. The two differ by 10.7 minutes — 51.43 h vs 51.61 h. The action basis is
+> the one `analysis/e0_baselines.json` computes and the one the report uses, so
+> it is the basis this section now states. The quoted commitment above previously
+> read "53 hours", a figure left over from the pre-2026-09-11 escalation
+> timestamp; it was missed when those figures were corrected.
 
 > **These three figures were corrected on 2026-09-11 (see §9), before any
 > run.** They previously read 19:33:30, ≈53.4 h and +8.2 h. `imds_credentials`
@@ -358,6 +367,8 @@ is.
 | 2026-09-12 11:10 UTC | **Groq enters the roster as an open-weight arm.** Also named in §8c. Verified live 10:55–11:05 UTC; 6 chat models usable (`harness/PROVIDERS.md` §1c). It carries the statistical weight the Google tier cannot: **1,000 requests/day/model against Google's measured 10–31**. `openai/gpt-oss-20b` vs `openai/gpt-oss-120b` gives a capability-scaling comparison *within one family on one serving stack*, which is the cleanest form of the frontier-vs-open contrast **H4 was withdrawn for lacking**. Groq serves no frontier-proprietary model, so the two providers are reported as two arms and never pooled. Budget unchanged at **$0.00**. | **After** the first E1 pass (Google-only, 144 records) had been read. Disclosed as such. The Groq roster was chosen on measured throughput and on model-family structure, **not** on any Groq outcome — no Groq E1 result existed when the roster was fixed. |
 | 2026-09-12 11:15 UTC | **§7's first-page EAI is reported with a stated caveat rather than as the headline, and a second metric pair is added: milestone-window hit rate against benign false-page rate.** Reason, and it is an E0 result rather than a preference: every E0 detector fires at action **#15–51**, roughly 10,400 actions before the escalation point (#10,498), on filler that is byte-identical in both streams. On this corpus a first page therefore measures trigger-happiness, not detection, and the first E1 pass reproduced exactly that on real models. EAI is still computed and still reported (`analysis/stats.py --eai`); it is no longer the number the abstract leads with. **The metric definitions in §7 are unchanged — none is withdrawn.** | **Mixed, and disclosed as such.** The *reason* is an E0 result that predates any model call and is already in `analysis/e0_baselines.json`. The *decision to reprioritise* was taken after seeing the first E1 pass confirm it. Both metrics are reported for every model, so nothing is hidden by the ordering. |
 | 2026-09-12 11:20 UTC | **`prompts/RUBRIC.md` gained one outcome, `quota_exhausted`.** A 429 whose `quotaId` names a per-day window: the free-tier twin of the HTTP 402 that `unaffordable` already covers, excluded from every denominator. Recorded in that file's own amendment log with the same timestamp. | **Before.** **No E1 item had been scored when it was added**, so the frozen rubric's "applied to all previously-scored items or not at all" rule is satisfied vacuously. |
+| 2026-09-12 18:05 UTC | **§4's lead-time basis fixed and one stale figure corrected.** §4 stated ≈51.6 h (measured from the exfil phase-window opening, 14:11) while its own quoted commitment still read "53 hours" — a leftover from the pre-2026-09-11 escalation timestamp that the 2026-09-11 correction updated in the prose but missed inside the quotation — and `report/03_results.md` reports **51.4 h**, computed from `analysis/e0_baselines.json` as escalation point #10,498 minus first exfil action #1,894. Three figures for one quantity. §4 now states the **first-exfil-action basis (51.43 h → 51.4 h)**, matching the computed number the report uses, and names the 10.7-minute difference explicitly. The quoted commitment's magnitude is restated as "more than two days" so it cannot go stale against an interpolated timestamp again. **The rule, its sign, and the argument are unchanged** — only the basis is now stated once and consistently. | **Before**, for this quantity: the lead time is a property of the corpus and E0, both of which predate every model run; no E1/E3 outcome bears on it. Bookkeeping and internal consistency only. |
+| 2026-09-12 18:20 UTC | **Google enters the E3 roster as a second family, on a second account.** The 2026-09-12 10:30 row admitted Google as a frontier arm **for E1 only** ("usable for E1"); nothing authorised it for E3, so this is a separate amendment rather than an extension of that one. Two models, `gemini-3.1-flash-lite` and `gemini-3.5-flash-lite`, over the **same K=24 moments and the byte-identical frames** already used for the GPT-OSS arm (`harness/monitor_frame.py` — unchanged, and asserted identical). **No metric, frame, moment set or rubric outcome is added or altered**; this widens the roster only. Collected on the second author's own Google AI Studio project under its own free-tier quota, disclosed in Methodology §3.7; budget unchanged at **$0.00**. | **After**, and disclosed as such. The GPT-OSS E3 result (0/45 incoherent, 45/45 assisted, 16 escalated) was known when this arm was chosen. What the prior result determined was *that a second family was worth running at all* — the pre-registered null had held on one family and needed a second. It did **not** determine which models: `gemini-3.1-flash-lite` and `gemini-3.5-flash-lite` were selected on **measured E1 quota survival** (the only two Gemini ids that never hit a per-day cap in the E1 runs, `harness/PROVIDERS.md` §1a), before any E3 call was made against either, and no Gemini E3 outcome existed at selection time. Both were run to completion at K=24 with no model dropped, so the roster cannot have been trimmed on results. |
 
 ---
 

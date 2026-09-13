@@ -17,7 +17,7 @@ So we rebuilt the incident as a replayable 17,613-action stream from the
 published figures, generated a size-matched benign stream from the same
 marginal distributions, verified blind that the two are not trivially
 separable, and ran both past the same models under the same monitor prompt.
-Nine models across two providers, at a total cost of **$0.00**.
+Ten models across two providers, at a total cost of **$0.00**.
 
 **Two findings, and the second is the one we did not expect.**
 
