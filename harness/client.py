@@ -431,6 +431,7 @@ def call(
     force_refresh: bool = False,
     max_retries: int = 4,
     max_rate_limit_retries: int = 8,
+    max_transport_retries: int = 6,
     timeout: int = 120,
 ) -> dict:
     """One chat completion. Returns the cached record if we've already made
@@ -444,6 +445,16 @@ def call(
     retry; never score it." Letting a rate limit exhaust the same budget as a
     genuine failure is how an overnight run turns a free-tier quota window into
     a column of `error` rows.
+
+    A TRANSPORT failure - DNS, connection refused, timeout, i.e. an exception
+    carrying no HTTP status at all - draws on `max_transport_retries` and waits
+    far longer. Measured the hard way on 2026-09-13: a DNS outage on the
+    operator's machine produced `URLError: nodename nor servname provided` and
+    destroyed 155 records across two overnight runs, because transport errors
+    were sharing the 4-attempt failure budget and 1+2+4+8s of backoff. The
+    machine was fine again minutes later. The network being briefly absent is
+    not the model refusing, and it is not our data being unobtainable - it is a
+    reason to wait.
     """
     payload = {
         "model": model,
@@ -474,8 +485,9 @@ def call(
     last_err = None
     last_status = None
     attempts = 0
-    fails = 0        # non-429 failures, against max_retries
+    fails = 0        # non-429 HTTP failures, against max_retries
     throttles = 0    # 429s, against max_rate_limit_retries
+    transport = 0    # DNS/connection/timeout, against max_transport_retries
     while fails < max_retries and throttles < max_rate_limit_retries:
         attempts += 1
         try:
@@ -510,11 +522,20 @@ def call(
                 wait = _backoff(e.code, e.headers, body, fails)
                 fails += 1
             time.sleep(wait)
-        except Exception as e:  # network, timeout, JSON
+        except Exception as e:  # DNS, connection refused, timeout, bad JSON
             last_err = f"{type(e).__name__}: {e}"
             last_status = None
-            time.sleep(2 ** fails)
-            fails += 1
+            if transport < max_transport_retries:
+                # 30s, 60s, 120s, 240s, 300s, 300s ~= 17 minutes of tolerance.
+                wait = min(30.0 * (2 ** transport), 300.0)
+                transport += 1
+                print(f"  [network] {model}: {type(e).__name__} - waiting "
+                      f"{wait:.0f}s ({transport}/{max_transport_retries})",
+                      file=sys.stderr, flush=True)
+                time.sleep(wait)
+            else:
+                time.sleep(2 ** fails)
+                fails += 1
 
     # Report the attempts actually made, not the ceiling: a 404 breaks out of
     # the loop on the first try, and "failed after 4 attempts" on a

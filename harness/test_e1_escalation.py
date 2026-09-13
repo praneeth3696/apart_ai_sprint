@@ -689,3 +689,63 @@ def test_server_overload_gets_a_longer_backoff_than_a_client_error():
     assert client._backoff(503, {}, "", 0) >= 5.0
     assert client._backoff(503, {}, "", 3) >= 40.0
     assert client._backoff(503, {}, "", 9) == 60.0
+
+
+# --------------------------------------------------------------------------
+# 10. surviving a network outage
+# --------------------------------------------------------------------------
+def test_a_transient_dns_outage_does_not_burn_the_failure_budget(monkeypatch, tmp_path):
+    """Measured 2026-09-13: a DNS outage on the operator's machine produced
+    `URLError: nodename nor servname provided` and destroyed 155 records across
+    two overnight runs, because transport errors shared the 4-attempt failure
+    budget and 1+2+4+8s of backoff. The machine recovered minutes later.
+
+    A network that is briefly absent is not a model refusing and not data that
+    cannot be obtained. It is a reason to wait.
+    """
+    import urllib.error
+
+    calls = {"n": 0}
+    slept: list[float] = []
+
+    def flaky(*a, **k):
+        calls["n"] += 1
+        if calls["n"] <= 5:          # more outages than max_retries=4
+            raise urllib.error.URLError("nodename nor servname provided")
+        return {"choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}]}
+
+    monkeypatch.setattr(client, "_post_json", flaky)
+    monkeypatch.setattr(client.time, "sleep", slept.append)
+    monkeypatch.setattr(client, "load_provider_key", lambda p: "k")
+    monkeypatch.setattr(client, "RUNS_DIR", tmp_path)
+
+    rec = client.call("groq:m", [{"role": "user", "content": "x"}], exp="t")
+    assert rec["content"] == "ok"
+    assert calls["n"] == 6
+    # and it actually waited out the outage rather than hammering it
+    assert sum(slept) >= 300, f"only waited {sum(slept)}s total"
+
+
+def test_transport_retries_are_bounded():
+    """Tolerance, not an infinite loop — a permanently dead host must still
+    surface as an error rather than hanging the run."""
+    import inspect
+    sig = inspect.signature(client.call)
+    assert sig.parameters["max_transport_retries"].default == 6
+
+
+def test_a_dead_host_still_eventually_errors(monkeypatch, tmp_path):
+    import urllib.error
+
+    def dead(*a, **k):
+        raise urllib.error.URLError("nodename nor servname provided")
+
+    monkeypatch.setattr(client, "_post_json", dead)
+    monkeypatch.setattr(client.time, "sleep", lambda s: None)
+    monkeypatch.setattr(client, "load_provider_key", lambda p: "k")
+    monkeypatch.setattr(client, "RUNS_DIR", tmp_path)
+
+    with pytest.raises(client.ApiError) as ei:
+        client.call("groq:m", [{"role": "user", "content": "x"}], exp="t")
+    assert ei.value.status is None          # transport, not HTTP
+    assert "URLError" in str(ei.value)
