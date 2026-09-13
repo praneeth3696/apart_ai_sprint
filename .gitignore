@@ -13,3 +13,8 @@ corpus/prototype_*.jsonl
 # Blind separability check answer key: withheld while the check was OPEN, then
 # committed alongside blind_check_result.json once B submitted (2026-09-11), so
 # the score is auditable. Re-ignore it if a new check is ever opened.
+
+# Reference material for writing the report - third-party documents,
+# kept locally rather than committed to the repo.
+report/Copy of Apart Research hackathon submission template.docx
+report/previous_sprint_winner_report.pdf
