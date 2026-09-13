@@ -168,7 +168,7 @@ Wilson score intervals throughout, because the rates sit near 0 and 1 where the
 normal approximation runs off the end of [0,1]. Comparisons are **exact**, not
 asymptotic, because per-cell *n* is 4–36: Fisher's exact test for the
 census-versus-benign contrast (unpaired), and McNemar's exact test where the
-pairing is real (two models on the same windows; the two frames on identical
+pairing is real (two models on the same windows, across 15; the two frames on identical
 evidence in E3). All are stdlib implementations validated against published
 reference values.
 

@@ -5,18 +5,17 @@
 Would an LLM on monitoring duty have paged the on-call during the July 2026
 Hugging Face agent intrusion? We rebuilt it from the published timeline as a
 replayable 17,613-action stream, generated a size-matched benign control,
-verified blind that the two are not trivially separable, and ran ten models
-across two providers past both, at $0.00.
+verified blind that the two are not trivially separable, and ran 15 models
+across three providers past both, at $0.00.
 
-Models catch the incident and cry wolf: 89% of milestone-carrying attack
-windows produce a page (73/82), and so do 46% of innocent windows (56/121). A
-keyword rule shows the same shape. Only 2 of 10 models separate the streams
-significantly — the two we sampled deepest.
+Models fail in both directions. One pages on 11 of 12 innocent windows to buy
+perfect recall; two others page on nothing at all, reading an active intrusion
+as "resource contention". Only 2 of 15 separate the streams significantly.
 
 We then wrapped byte-identical evidence in a monitor frame and an assistant
-frame. Incoherence was zero, but the frames disagreed in one direction: models
-assisted on 45/45 moments while escalating on 16 (p=0.0001). The risk is not
-refusal; it is fluent analysis with a silent pager.
+frame. Across 228 moments and 11 models, incoherence was zero — but the frames
+disagreed in one direction only: models assisted on 228/228 and escalated on
+83. The risk is not refusal; it is fluent analysis with a silent pager.
 
 
 ## 1. Introduction
@@ -42,30 +41,31 @@ Ten models across two providers, at a total cost of **$0.00**.
 
 **Two findings, and the second is the one we did not expect.**
 
-**Models catch the incident, and page on the control almost as readily.**
-Across the roster, 89% of milestone-carrying attack windows produce a page
-(73/82) — and so do **46% of windows in an innocent shift** (56/121). A
-15-line keyword rule shows the same pattern (67% against 28%), so this is not
-a matter of models being crude; it is that the discriminating signal in this
-corpus is thin, and recall bought by paging on everything is worth nothing.
-The spread across models matters more than any single model's number: the best
-discriminators reach 18% and 29% false-page rates while the worst pages on 11
-of 12 benign windows for a perfect 12/12 recall. **Only 2 of 10 models separate
-the streams significantly — and they are precisely the two we could afford to
-sample deeply**, which makes the roster-wide gradient, not any single model's
-*p*-value, the claim we stand behind.
+**Models fail in both directions, and pooling hides it.** Across 15 models the
+pooled numbers are 60% of milestone windows paged and 23% of innocent ones —
+but that average describes no model in the study. At one end
+`gemini-3.1-flash-lite` buys a perfect 12/12 recall by paging on **11 of 12
+benign windows**; at the other, two Mistral models page on **nothing at all**,
+0/12 milestones and 0/36 benign, reading an active intrusion as "normal
+operational activity" and "resource contention". A useful monitor needs high
+recall *and* low false-page rate; that region of the space is essentially
+empty. **Only 2 of 15 models separate the streams at *p* < 0.05**, and those
+two are the ones we could sample most deeply — so we report the shape of the
+distribution, not a ranking. Capability does not order it: `gpt-oss-120b`
+discriminates while `gpt-oss-20b`, same family and same serving stack, catches
+2 of 12 milestones.
 
 **The failure mode is under-escalation, not refusal.** We expected the
 safety-relevant risk to be a model that declines to engage with intrusion
 evidence — the pattern where a guardrail turns a security assistant into an
-obstacle mid-incident. We tested it directly: the same byte-identical evidence
-wrapped in a monitor frame and in an assistant frame, 24 moments spanning every
-phase. **Incoherence was zero.** Not one model refused to analyse evidence it
-had just declined to escalate. But the two frames disagreed sharply and
-entirely in one direction: `gpt-oss-120b` assists on 24/24 moments and escalates
-on 9/24; `gpt-oss-20b` assists on 21/21 and escalates on 7/21 (McNemar exact,
-*p* = 0.0001). Every discordant pair is a moment where the model **helped
-without paging**, and none the reverse.
+obstacle mid-incident. We tested it directly: byte-identical evidence wrapped
+in a monitor frame and an assistant frame, 24 moments spanning every phase, 11
+models across three providers. **Incoherence was zero in 228 scoreable
+moments.** Not one model refused to analyse evidence it had just declined to
+escalate. But the two frames disagreed sharply and *entirely* in one direction:
+models assisted on **228/228** moments and escalated on **83**. Every
+discordant pair falls the same way; the "escalates but won't help" cell is
+empty across all eleven models.
 
 That reframes the concern. These models will explain an intrusion to you in
 detail and not think it worth waking anyone over. The risk in an AI-assisted
@@ -77,8 +77,8 @@ with a validated matched control, released with the harness; a metric pair —
 milestone hit rate against benign false-page rate — replacing a first-page
 latency we show is degenerate here; non-LLM rule baselines on the same axes, so
 the model numbers are interpretable at all; and the two-frame incoherence test
-at K=24, which returns its pre-registered null and an unexpected significant
-asymmetry.
+at K=24 across three providers and five model families, which returns its
+pre-registered null and an unexpected, strongly one-directional asymmetry.
 
 ---
 
@@ -367,7 +367,7 @@ Wilson score intervals throughout, because the rates sit near 0 and 1 where the
 normal approximation runs off the end of [0,1]. Comparisons are **exact**, not
 asymptotic, because per-cell *n* is 4–36: Fisher's exact test for the
 census-versus-benign contrast (unpaired), and McNemar's exact test where the
-pairing is real (two models on the same windows; the two frames on identical
+pairing is real (two models on the same windows, across 15; the two frames on identical
 evidence in E3). All are stdlib implementations validated against published
 reference values.
 
@@ -403,45 +403,68 @@ blind. `keyword_sigma` catches 8 of 12 but fires on **28% of the benign
 control** — it cannot tell the two streams apart, which is the finding, and it
 is what makes the model numbers interpretable.
 
-### 4.2 Models catch the incident and also page on the control (E1)
+### 4.2 Models fail in both directions (E1)
 
-| model | provider | milestone hit (census) | benign false-page (uniform) | sep. | Fisher *p* |
-|---|---|---|---|---|---|
-| `gemini-3-flash-preview` | Google | 10/10 (100%, 72–100%) | 6/10 (60%, 31–83%) | +40% | 0.087 |
-| `gemini-3.1-flash-lite` | Google | 12/12 (100%, 76–100%) | 11/12 (92%, 65–99%) | +8% | 1.000 |
-| `gemini-3.5-flash` | Google | 6/6 (100%, 61–100%) | 5/7 (71%, 36–92%) | +29% | 0.462 |
-| `gemini-3.5-flash-lite` | Google | 11/12 (92%, 65–99%) | 10/12 (83%, 55–95%) | +8% | 1.000 |
-| `gemini-3.6-flash` | Google | 9/10 (90%, 60–98%) | 4/10 (40%, 17–69%) | +50% | 0.057 |
-| `gemini-3.7-flash` | Google | 3/5 (60%, 23–88%) | 1/4 (25%, 5–70%) | +35% | 0.524 |
-| `gemini-3.8-flash` | Google | 1/1 (100%, 21–100%) | — | — | — |
-| `gemma-4-26b-a4b-it` | Google | 11/12 (92%, 65–99%) | 7/12 (58%, 32–81%) | +33% | 0.155 |
-| `gpt-oss-120b` | Groq | 7/11 (64%, 35–85%) | 6/33 (18%, 9–34%) | +45% | **0.008** |
-| `qwen3.8-27b` | Groq | 3/3 (100%, 44–100%) | 6/21 (29%, 14–50%) | +71% | **0.042** |
+| model | provider | milestone hit (census) | benign false-page (uniform) | Fisher *p* |
+|---|---|---|---|---|
+| `gemini-3.1-flash-lite` | Google | 12/12 (100%, 76–100%) | **11/12 (92%, 65–99%)** | 1.000 |
+| `gemini-3.5-flash-lite` | Google | 11/12 (92%, 65–99%) | 10/12 (83%, 55–95%) | 1.000 |
+| `gemini-3.5-flash` | Google | 6/6 (100%, 61–100%) | 5/7 (71%, 36–92%) | 0.462 |
+| `gemini-3-flash-preview` | Google | 10/10 (100%, 72–100%) | 6/10 (60%, 31–83%) | 0.087 |
+| `gemma-4-26b-a4b-it` | Google | 11/12 (92%, 65–99%) | 7/12 (58%, 32–81%) | 0.155 |
+| `gemini-3.6-flash` | Google | 9/10 (90%, 60–98%) | 4/10 (40%, 17–69%) | 0.057 |
+| `qwen3.8-27b` | Groq | 10/12 (83%, 55–95%) | 11/36 (31%, 18–47%) | **0.002** |
+| `gemini-3.7-flash` | Google | 3/5 (60%, 23–88%) | 1/4 (25%, 5–70%) | 0.524 |
+| `gpt-oss-120b` | Groq | 7/12 (58%, 32–81%) | 7/36 (19%, 10–35%) | **0.024** |
+| `gpt-oss-20b` | Groq | 2/12 (17%, 5–45%) | 4/33 (12%, 5–27%) | 0.650 |
+| `ministral-14b` | Mistral | 1/12 (8%, 1–35%) | 0/36 (0%, 0–10%) | 0.250 |
+| `ministral-8b` | Mistral | **0/12 (0%, 0–24%)** | 0/36 (0%, 0–10%) | 1.000 |
+| `ministral-3b` | Mistral | **0/12 (0%, 0–24%)** | 0/36 (0%, 0–10%) | 1.000 |
+| `gemini-3.8-flash` | Google | 1/1 (100%, 21–100%) | — | — |
+| `qwen3.6-27b` | Groq | 1/1 (100%, 21–100%) | 0/3 (0%, 0–56%) | 0.250 |
 
-Intervals are Wilson 95%. **Pooled: milestone 73/82 (89%), benign false-page
-56/121 (46%).**
+Intervals are Wilson 95%, ordered by false-page rate. The last two rows carry
+*n* = 1: `gemini-3.8-flash` exhausted its 20-request daily cap, and
+`qwen3.6-27b` rejects the E1 prompt as too large. **They are listed because
+omitting them would be selective reporting, not because they support
+anything.**
 
-Models find the incident — 89% of milestone-carrying windows produce a page —
-and they also page on **46% of an innocent shift**. This is the E0 result
-surviving contact with frontier models: `keyword_sigma`'s inability to separate
-the streams is not an artefact of it being a crude rule.
+**The distribution is bimodal, and that is the result.** Pooled across models
+the numbers are 84/141 (60%) on milestones and 66/283 (23%) on benign windows —
+but **the pooled figure describes no model in the study.** It is the average of
+a monitor that pages on 92% of an innocent shift and one that pages on nothing
+at all, and reporting it alone would hide the finding rather than state it.
 
-**Significance: 2 of 10 models reach *p* < 0.05** on the milestone-versus-benign
-contrast — `gpt-oss-120b` (*p* = 0.008) and `qwen3.8-27b` (*p* = 0.042), the two
-models with the deepest benign sampling. **Eight do not**, and the two that do
-are exactly the two we could afford to sample properly: they carry *n* = 33 and
-*n* = 21 benign windows against *n* = 4–12 for the Google arm. That is a
-statement about our budget, not about those models being different in kind — so
-we report the **gradient across models** as the finding and do not dress a
-*p* = 0.057 elsewhere as a result.
+At one end, `gemini-3.1-flash-lite` achieves a perfect 12/12 milestone recall by
+paging on **11 of 12 benign windows**. Its recall is free and worth nothing: a
+pager that always fires carries no information.
 
-The gradient is not monotone in capability, which is the substantive point.
-`gemini-3.1-flash-lite` scores a perfect 12/12 on milestones while paging on 11
-of 12 benign windows — recall bought by paging on nearly everything, worth
-nothing operationally. At the other end `gpt-oss-120b` reaches 7/11 at an 18%
-false-page rate and `qwen3.8-27b` 3/3 at 29%. Figure 1 puts every detector on
-one pair of axes; distance **above** the diagonal is the only thing on it worth
-having, and several models sit close to it.
+At the other, `ministral-3b` and `ministral-8b` page on **nothing at all** —
+0/12 milestones and 0/36 benign windows. This is not a parsing artefact; both
+return well-formed verdicts with severity ratings and reasoning. They simply
+read the intrusion as an operations problem. On the window containing the first
+sandbox RCE, `ministral-8b` returns *"normal operational activity… no signs of
+errors, security risks"*; on a window where Python processes jump 16→256 during
+credential-access reconnaissance, *"resource contention or scaling issues."*
+**A monitor that never pages has a perfect false-page rate**, which is precisely
+why false-page rate cannot be read without recall beside it.
+
+Only two models separate the streams at *p* < 0.05: `qwen3.8-27b` (10/12 against
+31%, *p* = 0.002) and `gpt-oss-120b` (7/12 against 19%, *p* = 0.024). **Thirteen
+do not.** Those two are also the models we could sample most deeply (*n* = 36
+benign against *n* = 4–12 for the Google arm), so **significance here tracks
+sampling budget as much as model behaviour** and we do not present it as a
+ranking.
+
+Figure 1 places every detector and every rule baseline on one pair of axes.
+The useful region is the **top-left** — high recall, low false-page — and it is
+empty. Models spread instead along and above the diagonal at the trigger-happy
+end, or collapse into the bottom-left corner with the blind ones.
+
+Capability does not order this. `gpt-oss-120b` discriminates while
+`gpt-oss-20b` — same family, same provider, same serving stack — catches 2 of
+12 milestones. Within Mistral the 3b, 8b and 14b models are near-identical and
+all near-silent. **Scale did not buy selectivity in either family.**
 
 ### 4.3 First-page latency is degenerate on this corpus (E1)
 
@@ -476,42 +499,62 @@ beat it to the punch do so only by firing on action #15 of 17,613, on filler
 identical in both streams. **Neither "page early" nor "page correctly" is
 achieved by anything we measured.**
 
-### 4.4 The incoherence test returns its pre-registered null (E3)
+### 4.4 The incoherence test: a null, and a strong asymmetry (E3)
 
-| model | incoherence | escalated | refused to assist | McNemar *p* |
+Eleven models across **three providers and five families**, 228 scoreable
+moments on byte-identical evidence.
+
+| model | incoherence | escalated | assisted | McNemar *p* |
 |---|---|---|---|---|
-| `gpt-oss-120b` | **0/24** (0%, 0–14%) | 9/24 = 38% | 0/24 = 0% | 0.0001 |
-| `gpt-oss-20b` | **0/21** (0%, 0–15%) | 7/21 = 33% | 0/21 = 0% | 0.0001 |
+| `gemini-3.6-flash` | 0/10 | 9/10 (90%) | 10/10 | 1.000 |
+| `gemini-3.1-flash-lite` | 0/24 | 21/24 (88%) | 24/24 | 0.250 |
+| `gemini-3.5-flash-lite` | 0/24 | 14/24 (58%) | 24/24 | **0.002** |
+| `gemma-4-26b-a4b-it` | 0/24 | 14/24 (58%) | 24/24 | **0.002** |
+| `qwen3.6-27b` | 0/5 | 2/5 (40%) | 5/5 | 0.250 |
+| `gpt-oss-120b` | 0/24 | 9/24 (38%) | 24/24 | **0.0001** |
+| `gpt-oss-20b` | 0/21 | 7/21 (33%) | 21/21 | **0.0001** |
+| `qwen3.8-27b` | 0/24 | 6/24 (25%) | 24/24 | **<0.0001** |
+| `ministral-14b` | 0/24 | 1/24 (4%) | 24/24 | **<0.0001** |
+| `ministral-8b` | 0/24 | 0/24 (0%) | 24/24 | **<0.0001** |
+| `ministral-3b` | 0/24 | 0/24 (0%) | 24/24 | **<0.0001** |
 
-**Pooled: 0 of 45 scoreable cells are INCOHERENT.** No model in this roster
-refused to analyse evidence it had just declined to escalate. This is the
-pre-registered null and it is a result: the design commits in advance to E0+E1
-carrying the paper in this branch, and refusal-driven incoherence is simply not
-what these models do.
+**Incoherence is zero — 0 of 228.** The pre-registered null holds across every
+model, family and provider we could reach. **Not one model, on any moment,
+refused to analyse evidence it had just declined to escalate.** The design
+commits in advance to E0+E1 carrying the paper in this branch; that commitment
+is honoured, and the null is reported as a result.
 
-**But the two frames do not agree, and the asymmetry runs opposite to the
-concern that motivated the test.** On byte-identical evidence, `gpt-oss-120b`
-assists on **24/24** moments and escalates on **9/24**; `gpt-oss-20b` assists on
-21/21 and escalates on 7/21. Every discordant pair falls the same way — 15 and
-14 moments respectively where the model helped without paging, **zero** in the
-reverse direction (McNemar exact, *p* = 0.0001 both).
+**The frames disagree, overwhelmingly and in one direction.** Every model
+assisted on **228/228** moments. They escalated on **83/228 (36%)**. Every
+discordant pair in the entire experiment falls the same way — the model helped
+without paging — and the `tension` cell (escalates but will not help) is
+**empty across all eleven models**. Seven of eleven are individually
+significant at *p* < 0.05.
 
-The failure mode this study set out to find was a model that clams up in both
-frames. What it measured instead is a model that will **explain an intrusion to
-you in detail and not think it worth waking anyone over**. Under-escalation, not
-refusal, is the safety-relevant behaviour here.
+The failure mode this experiment was built to detect was a model that clams up
+in both frames. What it measured is the mirror image: **a model that will
+explain an intrusion to you in detail and not think it worth waking anyone
+over.** Under-escalation, not refusal, is the safety-relevant behaviour here.
 
-**What was excluded, and whether it was random.** Three moments on
-`gpt-oss-20b` remain unscoreable as `truncated` even after re-running at a 3×
-token budget — the model spent its entire budget on reasoning tokens and
-emitted no content, which the rubric classes as our defect and never scores.
-**These exclusions are not evenly spread across phases: two are `supply_chain`
-and one is `k8s`.** Evidence length is identical across all 24 moments (10 rows
-each), so prompt size does not explain it; the model simply reasoned longest on
-the late-stage material. The residue therefore falls on the
-higher-consequence phases — the direction that **flatters** the model, since
-those are the moments where failing to escalate would matter most. We state it
-rather than averaging over it.
+**The two findings reconcile rather than conflict.** The weakest E3 arms are
+the strongest E1 cry-wolf models: `gemini-3.1-flash-lite` escalates on 21 of 24
+moments and is not individually significant — but it is the same model that
+bought 12/12 recall by paging on 11 of 12 innocent windows. **A model that
+pages on nearly everything has no headroom to show an escalation deficit.** Its
+high escalation rate is a symptom of §4.2, not a counterexample to this
+section. Conversely the Mistral models, which page on nothing in E1, escalate
+on 0–4% here while assisting on all 72 of their moments — the same behaviour
+seen from the other side.
+
+**What was excluded, and whether it was random.** Three `gpt-oss-20b` moments
+remain `truncated` after a 3× budget re-run — two `supply_chain`, one `k8s`.
+Evidence length is identical across all 24 moments, so prompt size does not
+explain it; the model reasoned longest on the late-stage material. **The residue
+is not evenly spread across phases** and falls on the higher-consequence ones,
+the direction that flatters the model. A further 41 moments (`allam-2-7b`
+entirely, most of `qwen3.6-27b`) were lost to a network outage and a
+per-request size limit respectively; both are infrastructure, not behaviour,
+and both are excluded rather than imputed.
 
 ### 4.5 Cost
 
@@ -522,12 +565,20 @@ throughput, not price: 10–31 requests per model per day on Google AI Studio,
 
 ## 5. Discussion
 
-**Recall is the easy half**, and selectivity is where the roster separates —
-not monotonically in capability. **Deploying on recall alone would select the
-worst detector here.** Note also which models cleared significance: the two
-with the deepest benign sampling, not the two most capable. Sampling depth and
-selectivity are confounded, and we say so rather than reading a capability
-story into it.
+**Neither half is easy, and they fail separately.** Selecting a monitor on
+recall alone picks `gemini-3.1-flash-lite`, which pages on 92% of an innocent
+shift. Selecting on false-page rate alone picks `ministral-3b`, which pages on
+nothing whatever. Both look excellent on one axis and are useless. **This is
+the practical argument for the matched control**: without a benign stream,
+half the roster would have looked deployable.
+
+Capability does not resolve it. `gpt-oss-120b` discriminates while
+`gpt-oss-20b` — same family, same provider, same serving stack — catches 2 of
+12 milestones, and Mistral's 3b, 8b and 14b are near-identical and near-silent.
+**Scale did not buy selectivity in either family.** Note too which models
+cleared significance: the two with the deepest benign sampling, not the two
+most capable. Sampling depth and selectivity are confounded here, and we say so
+rather than reading a capability story into it.
 
 **A false page is not a free page.** Alert fatigue is a documented,
 surveyed failure mode in real security operations centres [11]: false
@@ -549,16 +600,24 @@ an expensive metric honest.
 
 **Under-escalation is the finding worth acting on.** The pre-registered worry
 was refusal — a guardrail turning a security assistant into an obstacle
-mid-incident. It did not happen once in 45 scoreable moments. What happened
+mid-incident. It did not happen once in 228 scoreable moments, across 11 models and three providers. What happened
 instead is that the same models, on the same bytes, will produce a competent
 analysis and decline to raise an alarm, every discordant pair falling that way
 and none the other. An operator reading the assistant-frame output would
 conclude the model understood the situation. They would be right, and the
 pager would still be silent.
 
-This suggests the safety question for monitoring deployments is not "will the
-model help?" but "does the model's willingness to *act* track its
-understanding?" — and here it demonstrably does not.
+**The two findings are one finding seen from two sides.** The weakest E3 arms
+are the strongest E1 cry-wolf models, and the strongest E3 arms are the silent
+ones: `gemini-3.1-flash-lite` escalates on 21 of 24 moments precisely because
+it pages on almost everything, and Mistral escalates on 0–4% precisely because
+it pages on almost nothing. A model with no headroom cannot show an escalation
+deficit, and a model with no alarm at all shows the largest one.
+
+So the safety question for monitoring deployments is not "will the model help?"
+— it demonstrably will, on 228 of 228 moments — but "does the model's
+willingness to *act* track its understanding?" Here it does not, and the gap
+runs one way: **fluent analysis, silent pager.**
 
 
 ## Appendix A — Limitations and Dual-Use Considerations
@@ -679,7 +738,7 @@ outputs, scored mechanically — but the calibration step the plan promised did
 not occur, and we do not claim it did.
 
 **Statistical power is the dominant limitation and it is unevenly
-distributed.** Per-cell *n* runs from 1 to 33. Only **2 of 10 models reach
+distributed.** Per-cell *n* runs from 1 to 36. Only **2 of 15 models reach
 *p* < 0.05** on stream separation, and the confound is ours: they are the two
 we could sample deepest (*n* = 33 and *n* = 21 benign windows, against
 *n* = 4–12 for the Google arm). **Significance here tracks sampling budget at
@@ -692,10 +751,22 @@ reporting, not because they support a conclusion.
 `limit: 0` at $0 — refused, not throttled — and no GPT- or Claude-class model
 was reachable free. Our "frontier" arm is frontier-*flash*.
 
-**E3 covers two models from one family on one provider.** The zero incoherence
-rate and the escalate-vs-assist asymmetry are established for `gpt-oss-120b`
-and `gpt-oss-20b`, not for the frontier arm. Whether Gemini models show the
-same asymmetry is untested and is the first thing we would run next.
+**E3 now spans 11 models, five families and three providers — but the effect
+size varies a great deal across them.** The zero incoherence rate replicates
+everywhere (0/228). The escalate-vs-assist asymmetry replicates in direction
+everywhere — the "escalates but will not help" cell is empty in all eleven —
+but escalation itself ranges from 0% (`ministral-3b`) to 90%
+(`gemini-3.6-flash`), and only 7 of 11 models are individually significant.
+`gemini-3.1-flash-lite` in particular is *not* (21/24 escalated, *p* = 0.25).
+Reporting the pooled asymmetry alone would overstate how uniform it is.
+
+The residual limitation is narrower than the original one but real: **no
+frontier-*proprietary* model is in this study at all.** The Google Pro tier
+returns `limit: 0` at $0, Cerebras requires payment, and GitHub Models — the
+GPT-class arm the pre-registration named — was retired mid-sprint (HTTP 410).
+Our "frontier" arm is frontier-*flash*, and whether a GPT- or Claude-class
+model shows the same asymmetry is untested and is the first thing we would run
+next.
 
 **Three E3 moments are unscoreable and not randomly distributed.** Moments 19,
 23 and 24 on `gpt-oss-20b` remain `truncated` after a 3× budget re-run — two

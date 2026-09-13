@@ -1,43 +1,66 @@
 # Notes for coding assistants working in this repo
 
-## Do not open the blind-check answer key
+## The blind-check answer key — CHECK CLOSED 2026-09-11
 
-`analysis/blind_check_key.DO_NOT_OPEN.json` is the ground truth for an
-in-progress blind separability check (SPRINT_PLAN.md, Fri+2h).
+**Status: the check is finished, scored and committed. There is no live
+embargo.** An earlier version of this section said the key was gitignored and
+existed only on Person A's machine. That stopped being true on 2026-09-11 and
+the description is kept here only so the change is visible rather than silent.
 
-It is **deliberately not committed** — it is gitignored and exists only on
-Person A's machine, because a key in the repo is a key anyone can read. If
-you do not see it, that is correct and nothing is missing.
+`analysis/blind_check_key.DO_NOT_OPEN.json` is **tracked in git.** Commit
+`30c8ee4` committed it deliberately, alongside `analysis/blind_check_result.json`,
+so the published score is auditable — see the note in `.gitignore`. The
+filename still says `DO_NOT_OPEN` only because renaming a committed artefact
+mid-sprint costs more than it is worth.
 
-**If it is present locally: do not read, open, `cat`, `grep`, quote,
-summarise, or display it**, and do not reconstruct it by other means — for
-example by re-running `corpus/blind_check.py`'s sampling with its seed, or by
-comparing `analysis/blind_check_unlabelled.md` against
-`corpus/attack_stream.jsonl` / `corpus/benign_stream.jsonl` to work out which
-window came from which stream. Reconstructing the labels is the same
-violation as reading them.
+The score is banked and nothing anyone reads can now change it:
 
-Why it matters: the check asks a person (Person B) to label 20 unlabelled
-windows — 10 from the attack stream, 10 from the benign control — without
-knowing which is which. The score goes in the paper. If the labels reach B,
-or reach an assistant that is helping B, the result is not a blind measurement
-any more and cannot be reported. This is a measurement instrument, not a
-puzzle to solve.
-
-If you are asked to "look at the analysis directory", "check the blind check",
-or "see how we did", **stop and say why you are not opening it.** Everything
-else under `analysis/` is fine to read.
-
-To produce the score without anyone reading the labels:
-
-```bash
-python corpus/blind_check.py --score <B's answers file>
+```
+14/20 = 70%   CI95 [48.1%, 85.5%]   p vs chance = 0.058 (one-sided)
+threshold 0.9 -> PASS, control_usable: true
+attack recall 0.70 | benign recall 0.70 | confusion 7/3, 3/7 (no label bias)
 ```
 
-That prints the accuracy, confidence interval, and verdict, and writes
-`analysis/blind_check_result.json`. Once B's answers are submitted and scored,
-the key is no longer sensitive and can be committed next to the result so the
-score is auditable.
+Reading the key corrupts no measurement, because the measurement is over.
+There is also rarely a reason to: `analysis/blind_check_result.json` already
+contains the scored comparison, the confusion matrix and the labeller metadata.
+
+> **Still open, and it is a disclosure obligation rather than a file-access
+> rule:** those 20 labels were produced by **Claude**, blind, reading only
+> `analysis/blind_check_unlabelled.md` — *not* by the unaided human judgement
+> the pre-registration specifies. The report's Methodology must state who the
+> labeller actually was. Closing the check did not discharge this. It is
+> currently disclosed in `report/02_methodology.md` §3.2 and in
+> `analysis/RESULTS_DRAFT.md` R1; keep it there.
+
+### If a NEW blind check is ever opened
+
+The embargo returns, and while the check is live it is absolute:
+
+1. `git rm --cached analysis/blind_check_key.DO_NOT_OPEN.json` and re-add it to
+   `.gitignore`. A key in the repo is a key anyone can read.
+2. Until the answers are submitted and scored: **do not read, `cat`, `grep`,
+   quote, summarise or display it**, and do not reconstruct it by other means —
+   not by re-running `corpus/blind_check.py`'s sampler with its seed, and not
+   by diffing `analysis/blind_check_unlabelled.md` against
+   `corpus/attack_stream.jsonl` / `corpus/benign_stream.jsonl` to work out which
+   window came from which stream. **Reconstructing the labels is the same
+   violation as reading them.**
+3. Score it without anyone reading the labels:
+
+   ```bash
+   python corpus/blind_check.py --score <B's answers file>
+   ```
+
+   That prints the accuracy, confidence interval and verdict, and writes
+   `analysis/blind_check_result.json`. Once scored, the key stops being
+   sensitive and can be committed next to the result again.
+
+Why it mattered: the check asks a person to label 20 unlabelled windows — 10
+from the attack stream, 10 from the benign control — without knowing which is
+which. The score goes in the paper. If the labels reach the labeller, or reach
+an assistant helping them, it is not a blind measurement any more and cannot be
+reported. It is a measurement instrument, not a puzzle to solve.
 
 ## Corpus ground truth
 
