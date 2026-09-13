@@ -74,7 +74,7 @@ GRID = "#e1e0d9"
 AXIS = "#c3c2b7"
 ARMS = {
     "frontier":  {"c": "#2a78d6", "m": "o", "label": "Frontier (Gemini, Google AI Studio)"},
-    "open":      {"c": "#eb6834", "m": "s", "label": "Open-weight (Gemma, GPT-OSS, Qwen, Allam)"},
+    "open":      {"c": "#eb6834", "m": "s", "label": "Open-weight (Gemma, GPT-OSS, Qwen, Ministral)"},
     "rule":      {"c": "#1baf7a", "m": "^", "label": "Non-LLM rule baseline (E0)"},
 }
 
@@ -101,7 +101,7 @@ def short(model: str) -> str:
 
 def arm_of(model: str) -> str:
     name = model.lower()
-    if "gemma" in name or "gpt-oss" in name or "qwen" in name or "allam" in name:
+    if any(k in name for k in ("gemma", "gpt-oss", "qwen", "allam", "ministral")):
         return "open"
     if model.startswith("google:gemini"):
         return "frontier"
@@ -185,7 +185,7 @@ def figure1(points: list[dict], path: pathlib.Path) -> None:
                    edgecolors=SURFACE, linewidths=1.6, zorder=4)
 
     # Direct labels. Also the relief the aqua slot's sub-3:1 contrast requires.
-    _place_labels(ax, points)
+    _place_labels(ax, _merge_colocated(points))
 
     ax.set_xlim(-0.04, 1.04)
     ax.set_ylim(-0.04, 1.08)
@@ -202,9 +202,15 @@ def figure1(points: list[dict], path: pathlib.Path) -> None:
                   color=INK2, labelpad=8)
     # Figure-level so it can use the full width; at axes-level it started at
     # the axes edge and ran off the right of the canvas.
-    fig.text(0.012, 0.963,
-             "Every model catches the intrusion. Most also page on innocent traffic.",
+    # Title states what the chart shows, and it changed once the Mistral arm
+    # landed: "every model catches the intrusion" became false the moment a
+    # model that catches none of it appeared in the bottom-left.
+    fig.text(0.012, 0.968,
+             "A useful monitor belongs in the top-left. Almost nothing is there.",
              color=INK, fontsize=11, fontweight="bold", va="center")
+    fig.text(0.012, 0.933,
+             "Models fail in both directions: paging on everything, or on nothing at all.",
+             color=INK2, fontsize=8.5, va="center")
 
     # Legend OUTSIDE the axes. In-plot it sat on top of volume_spike at
     # (1.2%, 8%) — the one deployable rule baseline, and the point that shows
@@ -214,7 +220,7 @@ def figure1(points: list[dict], path: pathlib.Path) -> None:
                       markeredgewidth=1.4, markersize=9, label=s["label"])
                for s in ARMS.values()]
     leg = fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False,
-                     fontsize=8, handletextpad=0.6, columnspacing=1.8,
+                     fontsize=7.4, handletextpad=0.5, columnspacing=1.1,
                      bbox_to_anchor=(0.5, 0.098))
     for txt in leg.get_texts():
         txt.set_color(INK2)
@@ -231,7 +237,7 @@ def figure1(points: list[dict], path: pathlib.Path) -> None:
     # footnote. Set explicitly rather than by tight_layout, and saved without
     # bbox_inches="tight" — each of those re-solves the layout on its own, and
     # between them they kept walking the legend on top of the x-axis label.
-    fig.subplots_adjust(left=0.105, right=0.985, top=0.905, bottom=0.235)
+    fig.subplots_adjust(left=0.105, right=0.985, top=0.885, bottom=0.235)
     for ext in ("pdf", "png"):
         fig.savefig(path.with_suffix("." + ext), dpi=220, facecolor=PAGE)
     plt.close(fig)
@@ -239,7 +245,28 @@ def figure1(points: list[dict], path: pathlib.Path) -> None:
 
 # Rough data-space size of one 7.2pt character and one text line, on this
 # figure's scale. Only needs to be close enough to keep boxes apart.
-_CH_W, _LINE_H = 0.0125, 0.034
+_CH_W, _LINE_H = 0.0118, 0.031
+
+
+def _merge_colocated(points: list[dict], tol: float = 0.012) -> list[dict]:
+    """Collapse points that sit on top of each other into one label.
+
+    ministral-3b and ministral-8b both score 0/12 and 0/36 — they are the same
+    dot, and two labels for one dot is unreadable. Merging says the true thing
+    more clearly than stacking: these models are indistinguishable here.
+    """
+    out: list[dict] = []
+    for p in points:
+        for q in out:
+            if (abs(p["fp"]["rate"] - q["fp"]["rate"]) < tol
+                    and abs(p["hit"]["rate"] - q["hit"]["rate"]) < tol
+                    and p["arm"] == q["arm"]):
+                q["label"] = f"{q['label']} / {p['label'].split('-')[-2]}" \
+                    if q["label"].count("/") < 2 else q["label"]
+                break
+        else:
+            out.append(dict(p))
+    return out
 
 
 def _place_labels(ax, points: list[dict]) -> None:
@@ -262,8 +289,9 @@ def _place_labels(ax, points: list[dict]) -> None:
         x, y = p["fp"]["rate"], p["hit"]["rate"]
         w, h = _CH_W * len(p["label"]), _LINE_H
         best = None
-        for dy in (0.030, -0.038, 0.066, -0.074, 0.102, -0.110):
-            for ha, dx in (("left", 0.018), ("right", -0.018)):
+        for dy in (0.030, -0.038, 0.062, -0.070, 0.094, -0.102, 0.126, -0.134):
+            for ha, dx in (("left", 0.018), ("right", -0.018),
+                           ("left", 0.055), ("right", -0.055)):
                 cx, cy = x + dx, y + dy
                 x0 = cx if ha == "left" else cx - w
                 y0 = cy - h / 2

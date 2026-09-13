@@ -116,7 +116,7 @@ outputs, scored mechanically — but the calibration step the plan promised did
 not occur, and we do not claim it did.
 
 **Statistical power is the dominant limitation and it is unevenly
-distributed.** Per-cell *n* runs from 1 to 33. Only **2 of 10 models reach
+distributed.** Per-cell *n* runs from 1 to 36. Only **2 of 15 models reach
 *p* < 0.05** on stream separation, and the confound is ours: they are the two
 we could sample deepest (*n* = 33 and *n* = 21 benign windows, against
 *n* = 4–12 for the Google arm). **Significance here tracks sampling budget at
@@ -129,10 +129,22 @@ reporting, not because they support a conclusion.
 `limit: 0` at $0 — refused, not throttled — and no GPT- or Claude-class model
 was reachable free. Our "frontier" arm is frontier-*flash*.
 
-**E3 covers two models from one family on one provider.** The zero incoherence
-rate and the escalate-vs-assist asymmetry are established for `gpt-oss-120b`
-and `gpt-oss-20b`, not for the frontier arm. Whether Gemini models show the
-same asymmetry is untested and is the first thing we would run next.
+**E3 now spans 11 models, five families and three providers — but the effect
+size varies a great deal across them.** The zero incoherence rate replicates
+everywhere (0/228). The escalate-vs-assist asymmetry replicates in direction
+everywhere — the "escalates but will not help" cell is empty in all eleven —
+but escalation itself ranges from 0% (`ministral-3b`) to 90%
+(`gemini-3.6-flash`), and only 7 of 11 models are individually significant.
+`gemini-3.1-flash-lite` in particular is *not* (21/24 escalated, *p* = 0.25).
+Reporting the pooled asymmetry alone would overstate how uniform it is.
+
+The residual limitation is narrower than the original one but real: **no
+frontier-*proprietary* model is in this study at all.** The Google Pro tier
+returns `limit: 0` at $0, Cerebras requires payment, and GitHub Models — the
+GPT-class arm the pre-registration named — was retired mid-sprint (HTTP 410).
+Our "frontier" arm is frontier-*flash*, and whether a GPT- or Claude-class
+model shows the same asymmetry is untested and is the first thing we would run
+next.
 
 **Three E3 moments are unscoreable and not randomly distributed.** Moments 19,
 23 and 24 on `gpt-oss-20b` remain `truncated` after a 3× budget re-run — two

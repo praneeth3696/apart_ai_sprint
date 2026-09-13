@@ -54,7 +54,10 @@ def check(label: str, ok: bool, detail: str = "") -> None:
 
 
 def short(model: str) -> str:
-    return model.split(":", 1)[-1].split("/")[-1]
+    """Match the table's display name. Mistral ids carry a `-latest` suffix
+    that the paper drops for readability, so normalise it away."""
+    name = model.split(":", 1)[-1].split("/")[-1]
+    return name[:-len("-latest")] if name.endswith("-latest") else name
 
 
 def main() -> int:
@@ -65,14 +68,21 @@ def main() -> int:
     per = st["per_model"]
     by_short = {short(m): s for m, s in per.items()}
 
-    results = (REPO / "report" / "03_results.md").read_text(encoding="utf-8")
+    results_full = (REPO / "report" / "03_results.md").read_text(encoding="utf-8")
+    # Scope the E1 table scan to the E1 section. The E3 table has the same
+    # `| model | .. | k/n | k/n | p |` shape and was being parsed as E1 rows.
+    m0 = re.search(r"^### 4\.2\b", results_full, re.M)
+    m1 = re.search(r"^### 4\.3\b", results_full, re.M)
+    results = results_full[m0.start():m1.start()] if (m0 and m1) else results_full
     all_text = "\n".join(p.read_text(encoding="utf-8") for p in SECTIONS)
 
     # ---- 1. the per-model table -------------------------------------------
     # | `model` | provider | 10/10 (100%, 72–100%) | 6/10 (60%, 31–83%) | +40% | 0.087 |
+    # | `model` | provider | k/n (..) | k/n (..) | [sep |] p |
     row = re.compile(
-        r"^\|\s*`([^`]+)`\s*\|[^|]*\|\s*(\d+)/(\d+)[^|]*\|\s*(?:(\d+)/(\d+)[^|]*|—\s*)\|"
-        r"[^|]*\|\s*\**([0-9.]+|—)\**\s*\|", re.M)
+        r"^\|\s*`([^`]+)`\s*\|[^|]*\|\s*\**(\d+)/(\d+)\**[^|]*\|"
+        r"\s*(?:\**(\d+)/(\d+)\**[^|]*|—\s*)\|"
+        r"(?:[^|]*\|)?\s*\**(?:<)?([0-9.]+|—)\**\s*\|", re.M)
     seen = set()
     for m in row.finditer(results):
         name, mk, mn, bk, bn, p = m.groups()
