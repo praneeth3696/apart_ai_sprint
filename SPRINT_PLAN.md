@@ -165,7 +165,7 @@ absorbs one disaster. Do not spend the buffer in advance.
 
 The sprint page says *"8-page maximum research report (PDF) on official
 template"*, and artifacts go in a **linked repository or appendix, not embedded
-in the report**. `guidelines.txt` says "most strong projects are 4 to 8 pages" —
+in the report**. `docs/sprint-materials/guidelines.txt` says "most strong projects are 4 to 8 pages" —
 8 is the ceiling, not the target. Aim for 7 including references. Section 5 has
 the page budget.
 

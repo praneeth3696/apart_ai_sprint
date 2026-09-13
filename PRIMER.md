@@ -288,7 +288,7 @@ are for.
 everything catches 100% of attacks. It is worthless. Activation rate alone
 never says whether a detector is good; you need the rate on traffic that is
 *not* an attack, generated the same way. That is the matched benign stream, and
-`guidelines.txt` names *"false-positive rate on matched controls"* in the
+`docs/sprint-materials/guidelines.txt` names *"false-positive rate on matched controls"* in the
 recommended Results section. Most teams will skip it. We must not.
 
 ---
