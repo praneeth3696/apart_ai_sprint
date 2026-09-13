@@ -1,7 +1,7 @@
 # PROVIDERS.md — the roster, and what we measured
 
-**Status: MEASURED 2026-09-12, 09:29–11:05 UTC.** Two providers obtained
-(Google AI Studio, Groq); the rest still have no key. Owner: **B (Praneeth)**.
+**Status: MEASURED 2026-09-12 09:29–11:05 UTC and 2026-09-13 06:15 UTC.** All
+five candidate providers now have keys; three are usable at $0. See §1e. Owner: **B (Praneeth)**.
 See `SPRINT_PLAN.md` §0.4.
 
 Every row here must be **measured, not assumed**, and stamped with the UTC
@@ -41,10 +41,10 @@ study stays at **$0.00** and that stays in the abstract.
 |---|---|---|---|---|---|---|---|
 | OpenRouter (existing) | ✅ 09-09 | `OPEN_ROUTER_KEY` | 11 `:free` models, `PREREGISTRATION.md` §8a | ? | **?** | — | **No key present on this machine.** Unfunded, negative balance. Not used for E1. |
 | Google AI Studio | ✅ 09-12 | `GOOGLE_AI_STUDIO_KEY` | 9 of 55 (see §1a) | see §1a | **per-model, see §1a** | 2026-09-12 09:29–09:48 | **Frontier arm restored at $0.** Quota is per-model, not per-account — see §1b. |
-| GitHub Models | ☐ | `GITHUB_MODELS_TOKEN` | | | | | Free with the GitHub account this repo already uses; GPT-class arm |
+| GitHub Models | ✅ key, ❌ service | `GITHUB_MODELS_TOKEN` | **none — service retired** | — | — | 2026-09-13 06:15 | **HTTP 410 `github_models_retirement_brownout`.** The GPT-class arm is gone; see §1e. |
 | Groq | ✅ 09-12 | `GROQ_API_KEY` | 6 of 14 (see §1c) | ~5 (TPM-bound) | **1,000/day/model** | 2026-09-12 10:55–11:05 | **Solved the volume problem, as predicted.** Open-weight only — no frontier arm here. |
-| Cerebras | ☐ | `CEREBRAS_API_KEY` | | | | | Redundancy against a Saturday 429 wall |
-| Mistral | ☐ | `MISTRAL_API_KEY` | | | | | Cheap diversity |
+| Cerebras | ✅ key, ❌ free tier | `CEREBRAS_API_KEY` | **none at $0** | — | — | 2026-09-13 06:15 | **HTTP 402 payment required** on every chat model. Recorded as `unaffordable`; see §1e. |
+| Mistral | ✅ 09-13 | `MISTRAL_API_KEY` | 3 of 46 (`ministral-3b/8b/14b`) | 30 | ~937k tok/min | 2026-09-13 06:15 | Free tier covers only the `ministral-*` family — a clean 3b→8b→14b size ladder. |
 | Anthropic first-party | ☐ | `ANTHROPIC_API_KEY` | | | | | **Only needed for the §0.2 attribution test.** `client.py` already routes `anthropic:<model>` here. |
 | Ollama (local) | ☐ | n/a | | ∞ | ∞ | | Offline insurance. No rate limit, fully deterministic, survives any outage. |
 
@@ -166,7 +166,7 @@ from a rejected API key. `client.py` now sends a real User-Agent on every
 request. If a provider ever 403s with an opaque body, check the User-Agent
 before you check the key.
 
-### 1d. What the two providers are each for
+### 1d. What each provider arm is for
 
 They are not interchangeable and the report should not present them as one
 pool:
@@ -177,9 +177,38 @@ pool:
   statistical weight, and `gpt-oss-20b` vs `gpt-oss-120b` is a
   capability-scaling comparison *within one family on one serving stack*.
 
-Gemma-4 on Google and GPT-OSS/Qwen on Groq are both open-weight, so the
-open-weight side spans two serving stacks — which is the §4 confound, and is
-why provider is reported next to every model id.
+- **Mistral = a second open-weight arm** at 3b/8b/14b, added 09-13. Its value
+  is the within-family size ladder, not breadth.
+
+Gemma-4 on Google, GPT-OSS/Qwen on Groq and Ministral on Mistral are all
+open-weight, so the open-weight side spans three serving stacks — which is the
+§4 confound, and is why provider is reported next to every model id. **No
+frontier-proprietary model is reachable at $0** (§1e): the Google Pro tier
+reports `limit: 0`, Cerebras 402s, and GitHub Models has been retired. Our
+"frontier" arm is frontier-*flash* and the report says so.
+
+### 1e. The three providers added on Sunday, and what each was worth
+
+Probed 2026-09-13 06:15 UTC with a **full-length E1 monitor prompt** (~1,000
+tokens), not a toy one.
+
+| Provider | Result | What it cost us to find out |
+|---|---|---|
+| **GitHub Models** | **HTTP 410, `github_models_retirement_brownout`** on both the current (`models.github.ai`) and legacy (`models.inference.ai.azure.com`) endpoints. The legacy host no longer resolves at all. | The GPT-class arm this roster most needed. **There is no frontier-proprietary model reachable at $0 anywhere in this study.** |
+| **Cerebras** | **HTTP 402 `payment_required_error`** on all three chat models it lists (`gpt-oss-120b`, `qwen-3.8-27b`); `gemma-4-31b` additionally 404s. | Nothing usable. Note this is exactly the outcome `RUBRIC.md` §0 calls `unaffordable` — a budget fact, never a model behaviour, excluded from every denominator. |
+| **Mistral** | **3 of 46 models usable.** `ministral-3b-latest`, `ministral-8b-latest`, `ministral-14b-latest` all answer in ~1–2 s. Everything larger (`mistral-medium*`, `mistral-small-latest`, `magistral-*`) returns a persistent HTTP 429 `rate_limited` on the first call, i.e. it is gated to a paid tier rather than throttled. | A genuine third arm, and a **within-family size ladder (3b → 8b → 14b)** that mirrors the `gpt-oss-20b`/`120b` pair. |
+
+Measured Mistral limits, read from the response headers on a successful call:
+`x-ratelimit-limit-req-minute: 30`, `x-ratelimit-limit-tokens-minute: 937500`.
+Far looser than Groq's 8,000 TPM, so Mistral runs fast; `--rpm 20` is safe.
+
+**Two lessons worth carrying beyond this sprint.** A free tier can be
+*withdrawn between the plan and the run* — GitHub Models was named in
+`PREREGISTRATION.md` §8c as the GPT-class hope and was retired before we
+reached it. And a provider listing a model in `GET /models` says nothing about
+whether your tier can call it: Cerebras and Mistral both advertise models that
+answer 402/429 on first contact. **Probe with a real prompt, not a catalogue
+read.**
 
 ## 2. How to measure
 
